@@ -394,11 +394,6 @@ class SpamToolZalo:
 messenger_tasks = {}
 zalo_spam_tasks = {}
 
-# ===== FLASK ROUTES =====
-@app.route('/')
-def index():
-    return render_template_string(HTML_TEMPLATE, username=session.get('username', 'User'))
-
 # ===== AUTH ROUTES =====
 @app.route('/login')
 def login_page():
@@ -475,6 +470,11 @@ def require_login():
     if not session.get('logged_in'):
         return redirect(url_for('login_page'))
 
+# ===== FLASK ROUTES =====
+@app.route('/')
+def index():
+    return render_template_string(HTML_TEMPLATE, username=session.get('username', 'User'))
+
 # ===== FILE MANAGEMENT =====
 @app.route('/upload_content', methods=['POST'])
 def upload_content():
@@ -498,45 +498,6 @@ def upload_content():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/get_files/<platform>', methods=['GET'])
-def get_files(platform):
-    try:
-        username = session.get('username', 'default')
-        folder = f"uploads/{username}/{platform}"
-        if not os.path.exists(folder):
-            return jsonify({'files': []})
-        
-        files = os.listdir(folder)
-        return jsonify({'files': files})
-    except Exception as e:
-        return jsonify({'files': [], 'error': str(e)})
-
-@app.route('/delete_file/<platform>/<filename>', methods=['DELETE'])
-def delete_file(platform, filename):
-    try:
-        username = session.get('username', 'default')
-        path = f"uploads/{username}/{platform}/{filename}"
-        if os.path.exists(path):
-            os.remove(path)
-            return jsonify({'success': True, 'message': 'Đã xóa file!'})
-        return jsonify({'success': False, 'message': 'File không tồn tại!'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/read_file/<platform>/<filename>', methods=['GET'])
-def read_file(platform, filename):
-    try:
-        username = session.get('username', 'default')
-        path = f"uploads/{username}/{platform}/{filename}"
-        if not os.path.exists(path):
-            return jsonify({'success': False, 'message': 'File không tồn tại!'})
-        
-        with open(path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        return jsonify({'success': True, 'content': content})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
 # ===== MESSENGER ROUTES =====
 @app.route('/start_messenger_spam', methods=['POST'])
 def start_messenger_spam():
@@ -546,7 +507,6 @@ def start_messenger_spam():
         box_ids = data.get('box_ids', [])
         content = data.get('content', '')
         delay = float(data.get('delay', 2))
-        filename = data.get('filename', '')
         
         if not cookie:
             return jsonify({'success': False, 'message': 'Thiếu cookie!'})
@@ -555,14 +515,6 @@ def start_messenger_spam():
         if not content:
             return jsonify({'success': False, 'message': 'Không có nội dung!'})
         
-        username = session.get('username', 'default')
-        
-        if filename:
-            path = f"uploads/{username}/messenger/{filename}"
-            if os.path.exists(path):
-                with open(path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-        
         task_id = f"messenger_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
         engine = MQTTSpamEngine(cookie, box_ids, content, delay)
@@ -570,7 +522,6 @@ def start_messenger_spam():
             'engine': engine,
             'box_ids': box_ids,
             'delay': delay,
-            'filename': filename,
             'status': 'running',
             'started_at': datetime.now().isoformat()
         }
@@ -608,20 +559,6 @@ def remove_messenger_task(task_id):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/remove_zalospam_task/<task_id>', methods=['DELETE'])
-def remove_zalospam_task(task_id):
-    try:
-        if task_id not in zalo_spam_tasks:
-            return jsonify({'success': False, 'message': 'Task không tồn tại!'})
-        
-        if zalo_spam_tasks[task_id].get('status') == 'running':
-            zalo_spam_tasks[task_id]['tool'].stop()
-        
-        del zalo_spam_tasks[task_id]
-        return jsonify({'success': True, 'message': 'Đã xóa task Zalo Spam!'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
 @app.route('/get_messenger_tasks', methods=['GET'])
 def get_messenger_tasks():
     tasks = []
@@ -630,7 +567,6 @@ def get_messenger_tasks():
             'id': tid,
             'box_count': len(task.get('box_ids', [])),
             'delay': task.get('delay', 0),
-            'filename': task.get('filename', ''),
             'status': task.get('status', 'unknown'),
             'started_at': task.get('started_at', '')
         })
@@ -667,7 +603,6 @@ def start_zalo_spam():
         group_ids = data.get('group_ids', [])
         content = data.get('content', '')
         delay = float(data.get('delay', 2))
-        filename = data.get('filename', '')
         
         if not imei or not cookie:
             return jsonify({'success': False, 'message': 'Thiếu IMEI hoặc Cookie!'})
@@ -675,14 +610,6 @@ def start_zalo_spam():
             return jsonify({'success': False, 'message': 'Chọn ít nhất 1 nhóm!'})
         if not content:
             return jsonify({'success': False, 'message': 'Không có nội dung!'})
-        
-        username = session.get('username', 'default')
-        
-        if filename:
-            path = f"uploads/{username}/zalo/{filename}"
-            if os.path.exists(path):
-                with open(path, 'r', encoding='utf-8') as f:
-                    content = f.read()
         
         lines = [line.strip() for line in content.split('\n') if line.strip()]
         cookies = parse_cookie_string_zalo(cookie)
@@ -698,7 +625,6 @@ def start_zalo_spam():
             'thread': thread,
             'group_ids': group_ids,
             'delay': delay,
-            'filename': filename,
             'status': 'running',
             'started_at': datetime.now().isoformat()
         }
@@ -720,6 +646,20 @@ def stop_zalo_spam(task_id):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+@app.route('/remove_zalospam_task/<task_id>', methods=['DELETE'])
+def remove_zalospam_task(task_id):
+    try:
+        if task_id not in zalo_spam_tasks:
+            return jsonify({'success': False, 'message': 'Task không tồn tại!'})
+        
+        if zalo_spam_tasks[task_id].get('status') == 'running':
+            zalo_spam_tasks[task_id]['tool'].stop()
+        
+        del zalo_spam_tasks[task_id]
+        return jsonify({'success': True, 'message': 'Đã xóa task Zalo Spam!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/get_zalo_spam_tasks', methods=['GET'])
 def get_zalo_spam_tasks():
     tasks = []
@@ -728,7 +668,6 @@ def get_zalo_spam_tasks():
             'id': tid,
             'group_count': len(task.get('group_ids', [])),
             'delay': task.get('delay', 0),
-            'filename': task.get('filename', ''),
             'status': task.get('status', 'unknown'),
             'started_at': task.get('started_at', '')
         })
@@ -1441,6 +1380,48 @@ def get_all_tasks():
     all_tasks = []
     username = session.get('username', 'default')
     
+    # Thêm task Messenger
+    for tid, task in messenger_tasks.items():
+        if task.get('status') == 'running':
+            status = 'running'
+        else:
+            status = task.get('status', 'stopped')
+        all_tasks.append({
+            'id': tid,
+            'type': 'messenger',
+            'box_name': 'Messenger',
+            'total': 0,
+            'sent': 0,
+            'delay': task.get('delay', 0),
+            'progress': 50 if status == 'running' else 100,
+            'status': status,
+            'error': None,
+            'finished_at': task.get('started_at', ''),
+            'tag_text': '',
+            'member_count': task.get('box_count', 0)
+        })
+    
+    # Thêm task Zalo Spam
+    for tid, task in zalo_spam_tasks.items():
+        if task.get('status') == 'running':
+            status = 'running'
+        else:
+            status = task.get('status', 'stopped')
+        all_tasks.append({
+            'id': tid,
+            'type': 'zalospam',
+            'box_name': 'Zalo Spam',
+            'total': 0,
+            'sent': 0,
+            'delay': task.get('delay', 0),
+            'progress': 50 if status == 'running' else 100,
+            'status': status,
+            'error': None,
+            'finished_at': task.get('started_at', ''),
+            'tag_text': '',
+            'member_count': task.get('group_count', 0)
+        })
+    
     for tid, task in spam_tasks.items():
         if task.get('username') != username:
             continue
@@ -1791,7 +1772,7 @@ LOGIN_TEMPLATE = """
 </html>
 """
 
-# ===== HTML TEMPLATE CHÍNH (ĐÃ SỬA LỖI XÓA TASK) =====
+# ===== HTML TEMPLATE CHÍNH =====
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="vi">
@@ -2510,6 +2491,8 @@ HTML_TEMPLATE = """
         let selectedBoxId_nhaytag = '';
         let members_nhaytag = [];
         let selectedMembers_nhaytag = [];
+        let selectedMessengerBoxes = [];
+        let selectedZaloGroups = [];
 
         // ===== SYNC COLOR =====
         document.getElementById('colorPicker').addEventListener('input', function() {
@@ -2888,7 +2871,7 @@ HTML_TEMPLATE = """
                                 `<button class="btn btn-outline-secondary btn-sm" onclick="removeMessengerTask('${task.id}')" style="font-size:10px;padding:2px 10px;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);"><i class="fas fa-trash"></i></button>`
                             }
                         </div>
-                        <div style="color:rgba(255,255,255,0.3);font-size:11px;">Box: ${task.box_count} | Delay: ${task.delay}s | File: ${task.filename || 'N/A'}</div>
+                        <div style="color:rgba(255,255,255,0.3);font-size:11px;">Box: ${task.box_count} | Delay: ${task.delay}s</div>
                     </div>`;
                 });
                 container.innerHTML = html;
@@ -3057,7 +3040,7 @@ HTML_TEMPLATE = """
                                 `<button class="btn btn-outline-secondary btn-sm" onclick="removeZaloSpamTask('${task.id}')" style="font-size:10px;padding:2px 10px;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);"><i class="fas fa-trash"></i></button>`
                             }
                         </div>
-                        <div style="color:rgba(255,255,255,0.3);font-size:11px;">Nhóm: ${task.group_count} | Delay: ${task.delay}s | File: ${task.filename || 'N/A'}</div>
+                        <div style="color:rgba(255,255,255,0.3);font-size:11px;">Nhóm: ${task.group_count} | Delay: ${task.delay}s</div>
                     </div>`;
                 });
                 container.innerHTML = html;
@@ -3252,7 +3235,7 @@ HTML_TEMPLATE = """
                         'die': '🔴 Cookie Die'
                     }[task.status] || task.status;
                     const progress = task.progress || 0;
-                    const typeIcon = task.type === 'nhaytag' ? '🏷' : task.type === 'messenger' ? '💬' : '📨';
+                    const typeIcon = task.type === 'nhaytag' ? '🏷' : task.type === 'messenger' ? '💬' : task.type === 'zalospam' ? '📱' : '📨';
                     const tagInfo = task.tag_text ? ` | 🏷 ${task.tag_text}` : '';
                     const memberInfo = task.member_count ? ` | 👥 ${task.member_count} người` : '';
                     html += `<div class="task-item" id="task_${task.id}">
