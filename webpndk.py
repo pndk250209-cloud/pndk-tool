@@ -551,7 +551,7 @@ def start_messenger_spam():
         if not cookie:
             return jsonify({'success': False, 'message': 'Thiếu cookie!'})
         if not box_ids:
-            return jsonify({'success': False, 'message': 'Chọn ít nhất 1 box!'})
+            return jsonify({'success': False, 'message': 'Nhập ít nhất 1 ID box!'})
         if not content:
             return jsonify({'success': False, 'message': 'Không có nội dung!'})
         
@@ -591,6 +591,34 @@ def stop_messenger_spam(task_id):
         messenger_tasks[task_id]['status'] = 'stopped'
         
         return jsonify({'success': True, 'message': f'Đã dừng task {task_id}'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/remove_messenger_task/<task_id>', methods=['DELETE'])
+def remove_messenger_task(task_id):
+    try:
+        if task_id not in messenger_tasks:
+            return jsonify({'success': False, 'message': 'Task không tồn tại!'})
+        
+        if messenger_tasks[task_id].get('status') == 'running':
+            messenger_tasks[task_id]['engine'].stop()
+        
+        del messenger_tasks[task_id]
+        return jsonify({'success': True, 'message': 'Đã xóa task Messenger!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/remove_zalospam_task/<task_id>', methods=['DELETE'])
+def remove_zalospam_task(task_id):
+    try:
+        if task_id not in zalo_spam_tasks:
+            return jsonify({'success': False, 'message': 'Task không tồn tại!'})
+        
+        if zalo_spam_tasks[task_id].get('status') == 'running':
+            zalo_spam_tasks[task_id]['tool'].stop()
+        
+        del zalo_spam_tasks[task_id]
+        return jsonify({'success': True, 'message': 'Đã xóa task Zalo Spam!'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
@@ -706,7 +734,771 @@ def get_zalo_spam_tasks():
         })
     return jsonify({'tasks': tasks})
 
-# ===== HTML TEMPLATE (RÚT GỌN) =====
+# ===== ACCOUNT ROUTES =====
+@app.route('/add_account', methods=['POST'])
+def add_account():
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        cookies = data.get('cookies', '').strip()
+        imei = data.get('imei', '').strip()
+        note = data.get('note', '').strip()
+        
+        if not name or not cookies or not imei:
+            return jsonify({'success': False, 'message': 'Thiếu thông tin!'})
+        
+        am = get_account_manager()
+        if not am:
+            return jsonify({'success': False, 'message': 'Vui lòng đăng nhập!'})
+        
+        success, result = am.add_account(name, cookies, imei, note)
+        if success:
+            return jsonify({'success': True, 'message': f'Đã thêm {name}!', 'account_id': result})
+        else:
+            return jsonify({'success': False, 'message': result})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/get_accounts', methods=['GET'])
+def get_accounts():
+    am = get_account_manager()
+    if not am:
+        return jsonify({'accounts': [], 'current_id': None, 'current_name': None})
+    
+    accounts = am.list_accounts()
+    current = am.get_current_account()
+    return jsonify({
+        'accounts': accounts,
+        'current_id': current.get('id') if current else None,
+        'current_name': current.get('name') if current else None
+    })
+
+@app.route('/use_account/<account_id>', methods=['POST'])
+def use_account(account_id):
+    global current_session
+    
+    am = get_account_manager()
+    if not am:
+        return jsonify({'success': False, 'message': 'Vui lòng đăng nhập!'})
+    
+    try:
+        account = am.get_account(account_id)
+        if not account:
+            return jsonify({'success': False, 'message': 'Không tìm thấy tài khoản!'})
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(
+            login_with_cookies_imei_async(account['cookies'], account['imei'])
+        )
+        loop.close()
+        
+        if result.get('success'):
+            current_session = {
+                'account_id': account_id,
+                'cookies': result.get('cookies', {}),
+                'user_info': result.get('user_info', {}),
+                'imei': account['imei']
+            }
+            
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            boxes = loop.run_until_complete(
+                get_box_chats_async(account['imei'], result.get('cookies', {}))
+            )
+            loop.close()
+            
+            am.update_login_status(account_id, True, len(boxes))
+            am.set_current_account(account_id)
+            return jsonify({
+                'success': True, 
+                'message': f'Đăng nhập thành công! {len(boxes)} box chat',
+                'boxes': boxes
+            })
+        else:
+            am.update_login_status(account_id, False)
+            return jsonify({'success': False, 'message': result.get('message', 'Đăng nhập thất bại!')})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/delete_account/<account_id>', methods=['DELETE'])
+def delete_account(account_id):
+    am = get_account_manager()
+    if not am:
+        return jsonify({'success': False, 'message': 'Vui lòng đăng nhập!'})
+    
+    try:
+        success = am.delete_account(account_id)
+        return jsonify({'success': success, 'message': 'Đã xóa!' if success else 'Không tìm thấy!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+# ===== BOX ROUTES =====
+@app.route('/get_boxes', methods=['GET'])
+def get_boxes():
+    global current_session
+    try:
+        if not current_session or not current_session.get('cookies'):
+            return jsonify({'success': False, 'message': 'Chưa đăng nhập!'})
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        boxes = loop.run_until_complete(
+            get_box_chats_async(current_session.get('imei', ''), current_session.get('cookies', {}))
+        )
+        loop.close()
+        return jsonify({'success': True, 'boxes': boxes})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/get_members/<group_id>', methods=['GET'])
+def get_members(group_id):
+    global current_session
+    try:
+        if not current_session or not current_session.get('cookies'):
+            return jsonify({'success': False, 'message': 'Chưa đăng nhập!'})
+        
+        from zlapi import ZaloAPI
+        bot = ZaloAPI("api_key", "secret_key", current_session.get('imei', ''), current_session.get('cookies', {}))
+        
+        info = bot.fetchGroupInfo(group_id)
+        members = []
+        for mem in info.gridInfoMap[group_id]["memVerList"]:
+            uid = mem.split("_")[0]
+            try:
+                user_info = bot.fetchUserInfo(uid)
+                name = user_info.changed_profiles[uid]["displayName"]
+            except:
+                name = f"User_{uid}"
+            members.append({"id": uid, "name": name})
+        
+        return jsonify({'success': True, 'members': members})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+# ===== TREO NGÔN ROUTES =====
+@app.route('/start_treongon', methods=['POST'])
+def start_treongon():
+    global current_session, spam_tasks
+    try:
+        data = request.get_json()
+        box_id = data.get('box_id')
+        box_name = data.get('box_name')
+        content = data.get('content')
+        delay = float(data.get('delay', 2))
+        total = int(data.get('total', 1))
+        tag_all = data.get('tag_all', True)
+        tag_text = data.get('tag_text', '@All').strip()
+        tag_color = data.get('tag_color', '#db342e')
+        colored = data.get('colored', True)
+        bold = data.get('bold', True)
+        color = data.get('color', '#db342e')
+        font_size = str(data.get('font_size', '15'))
+        multi_color = data.get('multi_color', False)
+
+        if not box_id or not content:
+            return jsonify({'success': False, 'message': 'Thiếu thông tin!'})
+        if not current_session or not current_session.get('cookies'):
+            return jsonify({'success': False, 'message': 'Chưa đăng nhập!'})
+
+        username = session.get('username', 'default')
+        task_id = f"treongon_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        stop_flag = threading.Event()
+        
+        spam_tasks[task_id] = {
+            'type': 'treongon',
+            'status': 'running',
+            'box_name': box_name,
+            'box_id': box_id,
+            'total': total,
+            'delay': delay,
+            'sent': 0,
+            'progress': 0,
+            'content': content,
+            'tag_all': tag_all,
+            'tag_text': tag_text,
+            'tag_color': tag_color,
+            'colored': colored,
+            'bold': bold,
+            'color': color,
+            'font_size': font_size,
+            'multi_color': multi_color,
+            'imei': current_session.get('imei', ''),
+            'stop_flag': stop_flag,
+            'thread': None,
+            'finished_at': None,
+            'error': None,
+            'username': username
+        }
+        
+        save_tasks()
+
+        thread = threading.Thread(
+            target=run_treongon_task, 
+            args=(task_id, current_session.get('imei', ''), current_session.get('cookies', {}))
+        )
+        thread.daemon = True
+        thread.start()
+        spam_tasks[task_id]['thread'] = thread
+
+        tag_info = f"🏷 {tag_text}" if tag_all else "🔕 Không tag"
+        return jsonify({
+            'success': True, 
+            'message': f'Đã bắt đầu treo vào {box_name} ({tag_info}) | Delay: {delay}s | {total} lần',
+            'task_id': task_id
+        })
+    except Exception as e:
+        logger.error(f"Lỗi start_treongon: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+def run_treongon_task(task_id, imei, cookies):
+    try:
+        task = spam_tasks.get(task_id)
+        if not task:
+            return
+        
+        box_id = task['box_id']
+        content = task['content']
+        total = task['total']
+        delay = task['delay']
+        stop_flag = task.get('stop_flag')
+        tag_all = task.get('tag_all', True)
+        tag_text = task.get('tag_text', '@All')
+        tag_color = task.get('tag_color', '#db342e')
+        colored = task.get('colored', True)
+        bold = task.get('bold', True)
+        color = task.get('color', '#db342e')
+        font_size = task.get('font_size', '15')
+        multi_color = task.get('multi_color', False)
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        sent = loop.run_until_complete(
+            send_full_message_with_style_async(
+                imei, cookies, box_id, content, 
+                delay, total, stop_flag, 
+                tag_all, tag_text, tag_color,
+                colored, bold, color, font_size, multi_color
+            )
+        )
+        loop.close()
+
+        task['sent'] = sent
+        task['progress'] = 100 if sent > 0 else 0
+        task['finished_at'] = datetime.now().isoformat()
+        
+        if stop_flag and stop_flag.is_set():
+            task['status'] = 'stopped'
+        else:
+            task['status'] = 'done' if sent > 0 else 'error'
+        
+        save_tasks()
+        logger.info(f"Treo ngôn task {task_id} hoàn thành: {sent}/{total}")
+        
+    except Exception as e:
+        logger.error(f"Lỗi run_treongon_task {task_id}: {e}")
+        if task_id in spam_tasks:
+            spam_tasks[task_id]['status'] = 'error'
+            spam_tasks[task_id]['error'] = str(e)
+            spam_tasks[task_id]['finished_at'] = datetime.now().isoformat()
+            save_tasks()
+
+# ===== NHAY TAG ROUTES =====
+@app.route('/start_nhaytag', methods=['POST'])
+def start_nhaytag():
+    global current_session, nhaytag_tasks
+    try:
+        data = request.get_json()
+        box_id = data.get('box_id')
+        box_name = data.get('box_name')
+        delay = float(data.get('delay', 5))
+        user_ids = data.get('user_ids', [])
+        content_text = data.get('content_text', '')
+
+        if not box_id:
+            return jsonify({'success': False, 'message': 'Thiếu box_id!'})
+        if not user_ids:
+            return jsonify({'success': False, 'message': 'Chọn ít nhất 1 thành viên!'})
+        if not content_text:
+            return jsonify({'success': False, 'message': 'Vui lòng upload file nội dung!'})
+        if not current_session or not current_session.get('cookies'):
+            return jsonify({'success': False, 'message': 'Chưa đăng nhập!'})
+
+        username = session.get('username', 'default')
+        task_id = f"nhaytag_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        stop_flag = threading.Event()
+        
+        nhaytag_tasks[task_id] = {
+            'type': 'nhaytag',
+            'status': 'running',
+            'box_name': box_name,
+            'box_id': box_id,
+            'delay': delay,
+            'user_ids': user_ids,
+            'member_count': len(user_ids),
+            'content_text': content_text,
+            'imei': current_session.get('imei', ''),
+            'stop_flag': stop_flag,
+            'thread': None,
+            'finished_at': None,
+            'error': None,
+            'username': username
+        }
+        
+        save_tasks()
+
+        thread = threading.Thread(
+            target=run_nhaytag_task,
+            args=(task_id, current_session.get('imei', ''), current_session.get('cookies', {}))
+        )
+        thread.daemon = True
+        thread.start()
+        nhaytag_tasks[task_id]['thread'] = thread
+
+        return jsonify({
+            'success': True,
+            'message': f'Đã bắt đầu nhây tag vào {box_name} | Delay: {delay}s | Tag {len(user_ids)} người',
+            'task_id': task_id
+        })
+    except Exception as e:
+        logger.error(f"Lỗi start_nhaytag: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+def run_nhaytag_task(task_id, imei, cookies):
+    try:
+        task = nhaytag_tasks.get(task_id)
+        if not task:
+            return
+        
+        box_id = task['box_id']
+        delay = task['delay']
+        user_ids = task['user_ids']
+        content_text = task.get('content_text', '')
+        stop_flag = task.get('stop_flag')
+        
+        error_queue = []
+        worker_nhaytag(imei, cookies, box_id, delay, stop_flag, error_queue, user_ids, content_text)
+        
+        if error_queue and 'cookie_die' in error_queue:
+            task['status'] = 'die'
+        else:
+            task['status'] = 'done'
+        
+        task['finished_at'] = datetime.now().isoformat()
+        save_tasks()
+        logger.info(f"Nhây tag task {task_id} hoàn thành")
+        
+    except Exception as e:
+        logger.error(f"Lỗi run_nhaytag_task {task_id}: {e}")
+        if task_id in nhaytag_tasks:
+            nhaytag_tasks[task_id]['status'] = 'error'
+            nhaytag_tasks[task_id]['error'] = str(e)
+            nhaytag_tasks[task_id]['finished_at'] = datetime.now().isoformat()
+            save_tasks()
+
+def worker_nhaytag(imei: str, cookies: dict, group_id: str,
+                   delay: float,
+                   running_flag: threading.Event,
+                   error_queue: list,
+                   user_ids: list = None,
+                   content_text: str = None):
+    """Worker chạy nhây tag trong thread riêng"""
+    try:
+        with suppress_output():
+            from zlapi import ZaloAPI, ThreadType, Message, Mention, MultiMention, MultiMsgStyle, MessageStyle
+            
+            bot = ZaloAPI("api_key", "secret_key", imei, cookies)
+            
+            if content_text:
+                lines = [l.strip() for l in content_text.split('\n') if l.strip()]
+            else:
+                file_path = "nhay.txt"
+                if not os.path.exists(file_path):
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write("Nội dung nhây tag mặc định")
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    lines = [l.strip() for l in f if l.strip()]
+            
+            if not lines:
+                lines = ["Nội dung nhây tag mặc định"]
+            
+            profiles = {}
+            if user_ids:
+                for i in range(0, len(user_ids), 10):
+                    batch = user_ids[i:i+10]
+                    try:
+                        profiles.update(bot.fetchUserInfo(*batch).changed_profiles)
+                    except:
+                        pass
+                    time.sleep(0.3)
+            
+            line_index = 0
+            while running_flag and not running_flag.is_set():
+                try:
+                    message_text = lines[line_index]
+                    msg = "@All " + message_text
+                    user_tags = []
+                    if user_ids:
+                        if not msg.endswith(" "):
+                            msg += " "
+                        for uid in user_ids:
+                            name = profiles.get(uid, {}).get("displayName", f"User {uid[-4:]}")
+                            tag = f"@{name}"
+                            user_tags.append(tag)
+                            msg += tag + " "
+                        msg = msg.rstrip()
+                    
+                    mentions = []
+                    all_mention = Mention(uid="-1", length=4, offset=0, auto_format=False)
+                    mentions.append(all_mention)
+                    
+                    if user_ids:
+                        for i, tag in enumerate(user_tags):
+                            search_start = 5 + len(message_text)
+                            if search_start < len(msg):
+                                offset = msg.find(tag, search_start)
+                                if offset != -1:
+                                    mentions.append(Mention(
+                                        uid=user_ids[i], length=len(tag), offset=offset, auto_format=False
+                                    ))
+                    
+                    lines_split = msg.strip().split('\n')
+                    colors = ["#db342e", "#f27806", "#f7b503", "#15a85f", "#1a73e8", "#9c27b0", "#00bcd4", "#ff5722"]
+                    random.shuffle(colors)
+                    styles_list = []
+                    current_offset = 0
+                    for i, line in enumerate(lines_split):
+                        if not line:
+                            current_offset += 1
+                            continue
+                        line_color = colors[i % len(colors)]
+                        styles_list.append(
+                            MessageStyle(offset=current_offset, length=len(line), style="color", color=line_color, auto_format=False)
+                        )
+                        styles_list.append(
+                            MessageStyle(offset=current_offset, length=len(line), style="bold", auto_format=False)
+                        )
+                        current_offset += len(line) + 1
+                    
+                    style = MultiMsgStyle(styles_list)
+                    bot.setTyping(group_id, ThreadType.GROUP)
+                    time.sleep(1.5)
+                    
+                    if mentions and len(mentions) > 0:
+                        m = Message(text=msg, mention=MultiMention(mentions), style=style)
+                    else:
+                        m = Message(text=msg, style=style)
+                    
+                    bot.send(m, thread_id=group_id, thread_type=ThreadType.GROUP)
+                    
+                    line_index += 1
+                    if line_index >= len(lines):
+                        line_index = 0
+                        
+                except Exception as e:
+                    err = str(e)
+                    if "zpw_sek" in err or "600" in err or "cookie" in err.lower():
+                        error_queue.append("cookie_die")
+                        running_flag.clear()
+                        break
+                    logger.error(f"Lỗi nhây tag: {e}")
+                
+                time.sleep(delay)
+    except Exception as e:
+        logger.error(f"Worker nhaytag lỗi: {e}")
+
+# ===== TASK MANAGEMENT =====
+def load_tasks():
+    global spam_tasks, nhaytag_tasks
+    
+    username = session.get('username', 'default')
+    TASKS_FILE, NHAYTAG_FILE = f"tasks_{username}.json", f"nhaytag_tasks_{username}.json"
+    
+    spam_tasks = {}
+    nhaytag_tasks = {}
+    
+    if os.path.exists(TASKS_FILE):
+        try:
+            with open(TASKS_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                spam_tasks = data
+                logger.info(f"✅ Đã load {len(spam_tasks)} treo ngôn tasks cho user {username}")
+        except Exception as e:
+            logger.error(f"❌ Lỗi load tasks cho {username}: {e}")
+            spam_tasks = {}
+    
+    if os.path.exists(NHAYTAG_FILE):
+        try:
+            with open(NHAYTAG_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                nhaytag_tasks = data
+                logger.info(f"✅ Đã load {len(nhaytag_tasks)} nhây tag tasks cho user {username}")
+        except Exception as e:
+            logger.error(f"❌ Lỗi load nhaytag tasks cho {username}: {e}")
+            nhaytag_tasks = {}
+
+def save_tasks():
+    try:
+        username = session.get('username', 'default')
+        TASKS_FILE, NHAYTAG_FILE = f"tasks_{username}.json", f"nhaytag_tasks_{username}.json"
+        
+        tasks_to_save = {}
+        for task_id, task in spam_tasks.items():
+            task_copy = task.copy()
+            task_copy.pop('stop_flag', None)
+            task_copy.pop('thread', None)
+            tasks_to_save[task_id] = task_copy
+        
+        with open(TASKS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(tasks_to_save, f, indent=2, ensure_ascii=False, default=str)
+        
+        ntags_to_save = {}
+        for task_id, task in nhaytag_tasks.items():
+            task_copy = task.copy()
+            task_copy.pop('stop_flag', None)
+            task_copy.pop('thread', None)
+            ntags_to_save[task_id] = task_copy
+        
+        with open(NHAYTAG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(ntags_to_save, f, indent=2, ensure_ascii=False, default=str)
+    except Exception as e:
+        logger.error(f"❌ Lỗi save tasks cho {session.get('username', 'default')}: {e}")
+
+def cleanup_dead_tasks():
+    for task_id, task in list(spam_tasks.items()):
+        if task.get('status') in ['done', 'error', 'stopped']:
+            if 'finished_at' in task:
+                try:
+                    elapsed = (datetime.now() - datetime.fromisoformat(task['finished_at'])).total_seconds()
+                    if elapsed > 300:
+                        del spam_tasks[task_id]
+                except:
+                    del spam_tasks[task_id]
+        elif task.get('status') == 'running':
+            thread = task.get('thread')
+            if thread and not thread.is_alive():
+                task['status'] = 'error'
+                task['finished_at'] = datetime.now().isoformat()
+                save_tasks()
+    
+    for task_id, task in list(nhaytag_tasks.items()):
+        if task.get('status') in ['done', 'error', 'stopped']:
+            if 'finished_at' in task:
+                try:
+                    elapsed = (datetime.now() - datetime.fromisoformat(task['finished_at'])).total_seconds()
+                    if elapsed > 300:
+                        del nhaytag_tasks[task_id]
+                except:
+                    del nhaytag_tasks[task_id]
+        elif task.get('status') == 'running':
+            thread = task.get('thread')
+            if thread and not thread.is_alive():
+                task['status'] = 'error'
+                task['finished_at'] = datetime.now().isoformat()
+                save_tasks()
+    save_tasks()
+
+@app.route('/stop_spam/<task_id>', methods=['POST'])
+def stop_spam(task_id):
+    global spam_tasks
+    try:
+        task = spam_tasks.get(task_id)
+        if not task:
+            return jsonify({'success': False, 'message': 'Không tìm thấy task'})
+        
+        username = session.get('username', 'default')
+        if task.get('username') != username:
+            return jsonify({'success': False, 'message': 'Bạn không có quyền dừng task này!'})
+        
+        stop_flag = task.get('stop_flag')
+        if stop_flag:
+            stop_flag.set()
+        
+        task['status'] = 'stopped'
+        task['finished_at'] = datetime.now().isoformat()
+        save_tasks()
+        
+        return jsonify({'success': True, 'message': f'Đã dừng task {task_id}'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/stop_nhaytag/<task_id>', methods=['POST'])
+def stop_nhaytag(task_id):
+    global nhaytag_tasks
+    try:
+        task = nhaytag_tasks.get(task_id)
+        if not task:
+            return jsonify({'success': False, 'message': 'Không tìm thấy task'})
+        
+        username = session.get('username', 'default')
+        if task.get('username') != username:
+            return jsonify({'success': False, 'message': 'Bạn không có quyền dừng task này!'})
+        
+        stop_flag = task.get('stop_flag')
+        if stop_flag:
+            stop_flag.set()
+        
+        task['status'] = 'stopped'
+        task['finished_at'] = datetime.now().isoformat()
+        save_tasks()
+        
+        return jsonify({'success': True, 'message': f'Đã dừng nhây tag task {task_id}'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/stop_all_tasks', methods=['POST'])
+def stop_all_tasks():
+    global spam_tasks, nhaytag_tasks
+    
+    load_tasks()
+    
+    try:
+        stopped = 0
+        username = session.get('username', 'default')
+        
+        for task_id, task in list(spam_tasks.items()):
+            if task.get('username') == username and task.get('status') == 'running':
+                stop_flag = task.get('stop_flag')
+                if stop_flag:
+                    stop_flag.set()
+                task['status'] = 'stopped'
+                task['finished_at'] = datetime.now().isoformat()
+                stopped += 1
+        
+        for task_id, task in list(nhaytag_tasks.items()):
+            if task.get('username') == username and task.get('status') == 'running':
+                stop_flag = task.get('stop_flag')
+                if stop_flag:
+                    stop_flag.set()
+                task['status'] = 'stopped'
+                task['finished_at'] = datetime.now().isoformat()
+                stopped += 1
+        
+        save_tasks()
+        return jsonify({'success': True, 'message': f'Đã dừng {stopped} task của bạn'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/remove_task/<task_id>', methods=['DELETE'])
+def remove_task(task_id):
+    global spam_tasks, nhaytag_tasks
+    try:
+        username = session.get('username', 'default')
+        
+        if task_id in spam_tasks:
+            if spam_tasks[task_id].get('username') != username:
+                return jsonify({'success': False, 'message': 'Bạn không có quyền xóa task này!'})
+            del spam_tasks[task_id]
+        elif task_id in nhaytag_tasks:
+            if nhaytag_tasks[task_id].get('username') != username:
+                return jsonify({'success': False, 'message': 'Bạn không có quyền xóa task này!'})
+            del nhaytag_tasks[task_id]
+        else:
+            return jsonify({'success': False, 'message': 'Không tìm thấy task'})
+        save_tasks()
+        return jsonify({'success': True, 'message': 'Đã xóa task'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/clear_finished_tasks', methods=['POST'])
+def clear_finished_tasks():
+    global spam_tasks, nhaytag_tasks
+    
+    load_tasks()
+    
+    try:
+        finished = ['done', 'error', 'stopped']
+        username = session.get('username', 'default')
+        to_remove = []
+        
+        for tid, task in spam_tasks.items():
+            if task.get('username') == username and task.get('status') in finished:
+                to_remove.append(('spam', tid))
+        
+        for tid, task in nhaytag_tasks.items():
+            if task.get('username') == username and task.get('status') in finished:
+                to_remove.append(('nhaytag', tid))
+        
+        for type_, tid in to_remove:
+            if type_ == 'spam':
+                del spam_tasks[tid]
+            else:
+                del nhaytag_tasks[tid]
+        
+        save_tasks()
+        return jsonify({'success': True, 'message': f'Đã xóa {len(to_remove)} task của bạn'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/get_all_tasks', methods=['GET'])
+def get_all_tasks():
+    global spam_tasks, nhaytag_tasks
+    
+    load_tasks()
+    cleanup_dead_tasks()
+    
+    all_tasks = []
+    username = session.get('username', 'default')
+    
+    for tid, task in spam_tasks.items():
+        if task.get('username') != username:
+            continue
+            
+        thread = task.get('thread')
+        if task.get('status') == 'running' and thread and not thread.is_alive():
+            task['status'] = 'error'
+            task['finished_at'] = datetime.now().isoformat()
+            save_tasks()
+        
+        all_tasks.append({
+            'id': tid,
+            'type': 'treongon',
+            'box_name': task.get('box_name', ''),
+            'total': task.get('total', 0),
+            'sent': task.get('sent', 0),
+            'delay': task.get('delay', 0),
+            'progress': task.get('progress', 0),
+            'status': task.get('status', 'unknown'),
+            'error': task.get('error', None),
+            'finished_at': task.get('finished_at', None),
+            'tag_text': task.get('tag_text', ''),
+            'member_count': 0
+        })
+    
+    for tid, task in nhaytag_tasks.items():
+        if task.get('username') != username:
+            continue
+            
+        thread = task.get('thread')
+        if task.get('status') == 'running' and thread and not thread.is_alive():
+            task['status'] = 'error'
+            task['finished_at'] = datetime.now().isoformat()
+            save_tasks()
+        
+        all_tasks.append({
+            'id': tid,
+            'type': 'nhaytag',
+            'box_name': task.get('box_name', ''),
+            'total': 0,
+            'sent': 0,
+            'delay': task.get('delay', 0),
+            'progress': 50,
+            'status': task.get('status', 'unknown'),
+            'error': task.get('error', None),
+            'finished_at': task.get('finished_at', None),
+            'tag_text': '',
+            'member_count': task.get('member_count', 0)
+        })
+    
+    all_tasks.sort(key=lambda x: (
+        0 if x['status'] == 'running' else 1,
+        x.get('finished_at', '') or ''
+    ))
+    
+    return jsonify({'tasks': all_tasks})
+
+# ===== HTML TEMPLATE =====
 LOGIN_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="vi">
@@ -999,7 +1791,7 @@ LOGIN_TEMPLATE = """
 </html>
 """
 
-# ===== HTML TEMPLATE CHÍNH =====
+# ===== HTML TEMPLATE CHÍNH (ĐÃ SỬA LỖI XÓA TASK) =====
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="vi">
@@ -1718,8 +2510,6 @@ HTML_TEMPLATE = """
         let selectedBoxId_nhaytag = '';
         let members_nhaytag = [];
         let selectedMembers_nhaytag = [];
-        let selectedMessengerBoxes = [];
-        let selectedZaloGroups = [];
 
         // ===== SYNC COLOR =====
         document.getElementById('colorPicker').addEventListener('input', function() {
@@ -1965,7 +2755,6 @@ HTML_TEMPLATE = """
             document.getElementById('selectedMessengerBoxes').value = boxIds || 'Chưa nhập ID box';
         }
 
-        // Gắn sự kiện khi nhập ID box
         document.getElementById('messengerBoxIds').addEventListener('input', updateMessengerBoxes);
 
         function startMessengerSpam() {
@@ -2040,6 +2829,36 @@ HTML_TEMPLATE = """
             });
         }
 
+        function removeMessengerTask(taskId) {
+            if (!confirm('Xóa task Messenger #' + taskId + '?')) return;
+            fetch('/remove_messenger_task/' + taskId, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    refreshMessengerTasks();
+                    refreshTasks();
+                    alert('✅ ' + data.message);
+                } else {
+                    alert('❌ ' + data.message);
+                }
+            });
+        }
+
+        function removeZaloSpamTask(taskId) {
+            if (!confirm('Xóa task Zalo Spam #' + taskId + '?')) return;
+            fetch('/remove_zalospam_task/' + taskId, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    refreshZaloSpamTasks();
+                    refreshTasks();
+                    alert('✅ ' + data.message);
+                } else {
+                    alert('❌ ' + data.message);
+                }
+            });
+        }
+
         function refreshMessengerTasks() {
             fetch('/get_messenger_tasks')
             .then(res => res.json())
@@ -2066,7 +2885,7 @@ HTML_TEMPLATE = """
                             <div><strong style="font-size:13px;">📨 #${task.id}</strong> <span class="task-status ${statusClass}">${statusLabel}</span></div>
                             ${task.status === 'running' ? 
                                 `<button class="btn btn-danger btn-sm" onclick="stopMessengerTask('${task.id}')" style="font-size:10px;padding:2px 10px;"><i class="fas fa-stop"></i> Dừng</button>` : 
-                                `<button class="btn btn-outline-secondary btn-sm" onclick="removeTask('${task.id}')" style="font-size:10px;padding:2px 10px;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);"><i class="fas fa-trash"></i></button>`
+                                `<button class="btn btn-outline-secondary btn-sm" onclick="removeMessengerTask('${task.id}')" style="font-size:10px;padding:2px 10px;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);"><i class="fas fa-trash"></i></button>`
                             }
                         </div>
                         <div style="color:rgba(255,255,255,0.3);font-size:11px;">Box: ${task.box_count} | Delay: ${task.delay}s | File: ${task.filename || 'N/A'}</div>
@@ -2235,7 +3054,7 @@ HTML_TEMPLATE = """
                             <div><strong style="font-size:13px;">📨 #${task.id}</strong> <span class="task-status ${statusClass}">${statusLabel}</span></div>
                             ${task.status === 'running' ? 
                                 `<button class="btn btn-danger btn-sm" onclick="stopZaloSpamTask('${task.id}')" style="font-size:10px;padding:2px 10px;"><i class="fas fa-stop"></i> Dừng</button>` : 
-                                `<button class="btn btn-outline-secondary btn-sm" onclick="removeTask('${task.id}')" style="font-size:10px;padding:2px 10px;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);"><i class="fas fa-trash"></i></button>`
+                                `<button class="btn btn-outline-secondary btn-sm" onclick="removeZaloSpamTask('${task.id}')" style="font-size:10px;padding:2px 10px;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);"><i class="fas fa-trash"></i></button>`
                             }
                         </div>
                         <div style="color:rgba(255,255,255,0.3);font-size:11px;">Nhóm: ${task.group_count} | Delay: ${task.delay}s | File: ${task.filename || 'N/A'}</div>
@@ -2517,9 +3336,6 @@ HTML_TEMPLATE = """
 </body>
 </html>
 """
-
-# ===== ACCOUNT ROUTES (GIỮ NGUYÊN) =====
-# ... (giữ nguyên các route account cũ)
 
 if __name__ == '__main__':
     print("=" * 60)
