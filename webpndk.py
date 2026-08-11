@@ -1,7 +1,7 @@
 # webpndk.py - Zalo Tool Treo Ngôn + Nhây Tag + Messenger Spam
 # -*- coding: utf-8 -*-
 
-# ===== CHẶN LOG ZALO API =====
+# ===== CHẶN LOG =====
 import logging
 import sys
 import os
@@ -538,43 +538,6 @@ def read_file(platform, filename):
         return jsonify({'success': False, 'message': str(e)})
 
 # ===== MESSENGER ROUTES =====
-@app.route('/get_messenger_boxes', methods=['POST'])
-def get_messenger_boxes():
-    try:
-        data = request.get_json()
-        cookie = data.get('cookie', '').strip()
-        
-        if not cookie:
-            return jsonify({'success': False, 'message': 'Thiếu cookie!'})
-        
-        # Tạo client MQTT để lấy danh sách chat
-        token = None
-        parts = cookie.split(';')
-        c_user = xs = None
-        for part in parts:
-            part = part.strip()
-            if part.startswith('c_user='):
-                c_user = part.split('=')[1]
-            elif part.startswith('xs='):
-                xs = part.split('=')[1]
-        if c_user and xs:
-            token = f"{c_user}|{xs}"
-        
-        if not token:
-            return jsonify({'success': False, 'message': 'Cookie không hợp lệ!'})
-        
-        # Giả lập danh sách box (thực tế cần gọi API Facebook)
-        # Vì không thể lấy danh sách qua MQTT đơn thuần, trả về danh sách mẫu
-        boxes = [
-            {'id': '123456789', 'name': 'Box 1'},
-            {'id': '987654321', 'name': 'Box 2'},
-            {'id': '111111111', 'name': 'Box 3'},
-        ]
-        
-        return jsonify({'success': True, 'boxes': boxes})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
 @app.route('/start_messenger_spam', methods=['POST'])
 def start_messenger_spam():
     try:
@@ -645,7 +608,7 @@ def get_messenger_tasks():
         })
     return jsonify({'tasks': tasks})
 
-# ===== ZALO SPAM ROUTES (MỚI) =====
+# ===== ZALO SPAM ROUTES =====
 @app.route('/get_zalo_groups', methods=['POST'])
 def get_zalo_groups():
     try:
@@ -1578,12 +1541,20 @@ HTML_TEMPLATE = """
                         <div class="row">
                             <div class="col-md-5">
                                 <div class="card">
-                                    <div class="card-header"><i class="fab fa-facebook-messenger"></i> Cookie & Box</div>
+                                    <div class="card-header"><i class="fab fa-facebook-messenger"></i> Cookie & Box ID</div>
                                     <div class="card-body">
-                                        <div class="mb-3"><label class="form-label"><i class="fas fa-cookie-bite"></i> Cookie Facebook</label><textarea class="form-control" id="messengerCookie" rows="3" placeholder="c_user=...; xs=...; ..." style="font-size:12px;"></textarea></div>
-                                        <button class="btn btn-primary-custom w-100 mb-3" onclick="getMessengerBoxes()"><i class="fas fa-sync"></i> Lấy danh sách box</button>
-                                        <div id="messengerBoxList" class="list-container">
-                                            <div class="empty-state"><i class="fas fa-inbox"></i><p>Chưa có box chat</p><small>Nhập cookie và nhấn lấy danh sách</small></div>
+                                        <div class="mb-3">
+                                            <label class="form-label"><i class="fas fa-cookie-bite"></i> Cookie Facebook</label>
+                                            <textarea class="form-control" id="messengerCookie" rows="3" placeholder="c_user=...; xs=...; ..." style="font-size:12px;"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label"><i class="fas fa-id-card"></i> ID Box (cách nhau bằng dấu phẩy)</label>
+                                            <input type="text" class="form-control" id="messengerBoxIds" placeholder="VD: 123456789, 987654321, 111111111">
+                                            <small style="color:rgba(255,255,255,0.3);font-size:11px;">Nhập ID box chat Facebook (mỗi ID cách nhau dấu phẩy)</small>
+                                        </div>
+                                        <div class="alert alert-info" style="font-size:12px;">
+                                            <i class="fas fa-info-circle"></i> 
+                                            <strong>Cách lấy ID box:</strong> Vào Facebook → click vào tin nhắn → xem URL: facebook.com/messages/t/<strong>123456789</strong>
                                         </div>
                                     </div>
                                 </div>
@@ -1593,16 +1564,38 @@ HTML_TEMPLATE = """
                                     <div class="card-header"><i class="fab fa-facebook-messenger"></i> Treo Messenger <span class="badge bg-light text-dark badge-float" id="messengerStatus">Chưa đăng nhập</span></div>
                                     <div class="card-body">
                                         <div class="row">
-                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-clock"></i> Delay (giây)</label><input type="number" class="form-control" id="messengerDelay" value="2" min="0.5" step="0.5"></div></div>
-                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-file-alt"></i> File nội dung</label>
-                                                <div class="file-upload-area" onclick="document.getElementById('messengerFileInput').click()" style="padding:8px;"><i class="fas fa-cloud-upload-alt"></i><span style="font-size:13px;">Chọn file .txt</span><input type="file" id="messengerFileInput" accept=".txt" style="display:none;" onchange="loadMessengerFile(event)"></div>
-                                                <div id="messengerFileName" class="mt-2 text-success" style="display:none;font-size:13px;">📎 Đã chọn: <span id="messengerFileText"></span></div>
-                                                <input type="hidden" id="messengerFileContent" value="">
-                                            </div></div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="fas fa-clock"></i> Delay (giây)</label>
+                                                    <input type="number" class="form-control" id="messengerDelay" value="2" min="0.5" step="0.5">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="fas fa-file-alt"></i> File nội dung</label>
+                                                    <div class="file-upload-area" onclick="document.getElementById('messengerFileInput').click()" style="padding:8px;">
+                                                        <i class="fas fa-cloud-upload-alt"></i>
+                                                        <span style="font-size:13px;">Chọn file .txt</span>
+                                                        <input type="file" id="messengerFileInput" accept=".txt" style="display:none;" onchange="loadMessengerFile(event)">
+                                                    </div>
+                                                    <div id="messengerFileName" class="mt-2 text-success" style="display:none;font-size:13px;">
+                                                        📎 Đã chọn: <span id="messengerFileText"></span>
+                                                    </div>
+                                                    <input type="hidden" id="messengerFileContent" value="">
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="mb-3"><label class="form-label"><i class="fas fa-comment"></i> Nội dung (nếu không có file)</label><textarea class="form-control" id="messengerContent" rows="3" placeholder="Nội dung tin nhắn..."></textarea></div>
-                                        <div class="mb-3"><label class="form-label"><i class="fas fa-list"></i> Box đã chọn</label><input type="text" class="form-control" id="selectedMessengerBoxes" readonly placeholder="Chọn box ở bên trái"></div>
-                                        <button class="btn btn-primary-custom w-100" onclick="startMessengerSpam()" id="messengerBtn"><i class="fas fa-play"></i> Bắt đầu treo Messenger</button>
+                                        <div class="mb-3">
+                                            <label class="form-label"><i class="fas fa-comment"></i> Nội dung (nếu không có file)</label>
+                                            <textarea class="form-control" id="messengerContent" rows="3" placeholder="Nội dung tin nhắn..."></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label"><i class="fas fa-list"></i> Box ID đã nhập</label>
+                                            <input type="text" class="form-control" id="selectedMessengerBoxes" readonly placeholder="Nhập ID box ở bên trái">
+                                        </div>
+                                        <button class="btn btn-primary-custom w-100" onclick="startMessengerSpam()" id="messengerBtn">
+                                            <i class="fas fa-play"></i> Bắt đầu treo Messenger
+                                        </button>
                                         <div id="messengerStatusMsg" class="mt-3"></div>
                                     </div>
                                 </div>
@@ -1967,81 +1960,32 @@ HTML_TEMPLATE = """
         }
 
         // ===== MESSENGER =====
-        function getMessengerBoxes() {
-            const cookie = document.getElementById('messengerCookie').value.trim();
-            if (!cookie) {
-                alert('⚠️ Nhập cookie Facebook!');
-                return;
-            }
-            const container = document.getElementById('messengerBoxList');
-            container.innerHTML = '<div class="text-center"><div class="spinner-small"></div> Đang lấy box...</div>';
-            document.getElementById('messengerStatus').textContent = 'Đang lấy...';
-            
-            fetch('/get_messenger_boxes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cookie: cookie })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.boxes && data.boxes.length > 0) {
-                    let html = '';
-                    data.boxes.forEach((box, index) => {
-                        const boxId = 'msg_box_' + index;
-                        html += `<div class="box-item" onclick="selectMessengerBox('${box.id}', '${box.name}', '${boxId}')" id="${boxId}">
-                            <div><i class="fab fa-facebook-messenger"></i> ${box.name}</div>
-                            <div class="box-check"></div>
-                        </div>`;
-                    });
-                    container.innerHTML = html;
-                    document.getElementById('messengerStatus').textContent = '✅ Đã lấy ' + data.boxes.length + ' box';
-                } else {
-                    container.innerHTML = `<div class="empty-state"><i class="fas fa-inbox"></i><p>${data.message || 'Không tìm thấy box chat'}</p></div>`;
-                    document.getElementById('messengerStatus').textContent = '❌ Không tìm thấy box';
-                }
-            })
-            .catch(err => {
-                container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Lỗi: ${err}</p></div>`;
-                document.getElementById('messengerStatus').textContent = '❌ Lỗi: ' + err;
-            });
+        function updateMessengerBoxes() {
+            const boxIds = document.getElementById('messengerBoxIds').value.trim();
+            document.getElementById('selectedMessengerBoxes').value = boxIds || 'Chưa nhập ID box';
         }
 
-        function selectMessengerBox(id, name, boxId) {
-            const idx = selectedMessengerBoxes.findIndex(b => b.id === id);
-            if (idx === -1) {
-                selectedMessengerBoxes.push({ id: id, name: name });
-            } else {
-                selectedMessengerBoxes.splice(idx, 1);
-            }
-            const el = document.getElementById(boxId);
-            if (el) {
-                if (idx === -1) {
-                    el.classList.add('selected');
-                    el.querySelector('.box-check').textContent = '✅';
-                } else {
-                    el.classList.remove('selected');
-                    el.querySelector('.box-check').textContent = '';
-                }
-            }
-            const names = selectedMessengerBoxes.map(b => b.name).join(', ');
-            document.getElementById('selectedMessengerBoxes').value = names || 'Chưa chọn box nào';
-        }
+        // Gắn sự kiện khi nhập ID box
+        document.getElementById('messengerBoxIds').addEventListener('input', updateMessengerBoxes);
 
         function startMessengerSpam() {
             const cookie = document.getElementById('messengerCookie').value.trim();
+            const boxIdsInput = document.getElementById('messengerBoxIds').value.trim();
             const delay = parseFloat(document.getElementById('messengerDelay').value) || 2;
             const content = document.getElementById('messengerContent').value.trim();
             const fileContent = document.getElementById('messengerFileContent').value;
-            const boxIds = selectedMessengerBoxes.map(b => b.id);
             
             if (!cookie) {
                 alert('⚠️ Nhập cookie Facebook!');
                 return;
             }
+            
+            const boxIds = boxIdsInput.split(',').map(id => id.trim()).filter(id => id);
             if (boxIds.length === 0) {
-                alert('⚠️ Chọn ít nhất 1 box!');
+                alert('⚠️ Nhập ít nhất 1 ID box! (cách nhau bằng dấu phẩy)');
                 return;
             }
+            
             const finalContent = fileContent || content;
             if (!finalContent) {
                 alert('⚠️ Nhập nội dung hoặc upload file!');
