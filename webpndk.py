@@ -1159,7 +1159,7 @@ LOGIN_TEMPLATE = """
         }
     </script>
 
-    <!-- ===== FLOATING MUSIC PLAYER - FIXED ===== -->
+    <!-- ===== FLOATING MUSIC PLAYER - TIKTOK SUPPORT ===== -->
     <style>
         #musicPlayer {
             position: fixed;
@@ -1178,7 +1178,7 @@ LOGIN_TEMPLATE = """
             box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
             transition: all 0.3s ease;
             font-family: 'Segoe UI', sans-serif;
-            max-width: 320px;
+            max-width: 350px;
         }
         #musicPlayer:hover {
             background: rgba(0, 0, 0, 0.85);
@@ -1288,6 +1288,15 @@ LOGIN_TEMPLATE = """
             color: #fff;
             transform: rotate(30deg);
         }
+        #sourceTag {
+            font-size: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            color: rgba(255,255,255,0.3);
+            margin-left: 4px;
+            flex-shrink: 0;
+        }
         @media (max-width: 480px) {
             #musicPlayer {
                 padding: 8px 12px;
@@ -1313,6 +1322,10 @@ LOGIN_TEMPLATE = """
             #nextBtn {
                 font-size: 13px;
             }
+            #sourceTag {
+                font-size: 7px;
+                padding: 1px 4px;
+            }
         }
     </style>
 
@@ -1330,37 +1343,74 @@ LOGIN_TEMPLATE = """
         <button id="nextBtn" title="Bài tiếp theo">
             <i class="fas fa-step-forward"></i>
         </button>
+        <span id="sourceTag">🎵</span>
         <audio id="bgMusic" preload="auto"></audio>
     </div>
 
     <script>
         (function() {
-            // ===== DANH SÁCH NHẠC (Dùng MP3 - Không bị chặn autoplay) =====
+            // ===== DANH SÁCH NHẠC (Hỗ trợ TikTok) =====
             const PLAYLIST = [
                 { 
+                    url: 'https://vt.tiktok.com/ZS4cxjhYc/',
+                    name: 'Nhạc TikTok 1', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cxecTW/',
+                    name: 'Nhạc TikTok 2', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cxe7Sv/',
+                    name: 'Nhạc TikTok 3', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cxSb5v/',
+                    name: 'Nhạc TikTok 4', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cxrDPM/',
+                    name: 'Nhạc TikTok 5', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cxrpsX/',
+                    name: 'Nhạc TikTok 6', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cx5Wbx/',
+                    name: 'Nhạc TikTok 7', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cx5Xtf/',
+                    name: 'Nhạc TikTok 8', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                // Fallback MP3 (nếu TikTok không load được)
+                { 
                     url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-                    name: 'Anh Sẽ Đón Em', 
-                    artist: 'Nguyên ft. Trang (Cukak Remix)' 
+                    name: 'Nhạc Dự Phòng 1', 
+                    artist: 'SoundHelix',
+                    type: 'mp3'
                 },
                 { 
                     url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-                    name: 'Bài hát 2', 
-                    artist: 'Nghệ sĩ 2' 
-                },
-                { 
-                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-                    name: 'Bài hát 3', 
-                    artist: 'Nghệ sĩ 3' 
-                },
-                { 
-                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-                    name: 'Bài hát 4', 
-                    artist: 'Nghệ sĩ 4' 
-                },
-                { 
-                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
-                    name: 'Bài hát 5', 
-                    artist: 'Nghệ sĩ 5' 
+                    name: 'Nhạc Dự Phòng 2', 
+                    artist: 'SoundHelix',
+                    type: 'mp3'
                 }
             ];
 
@@ -1370,41 +1420,93 @@ LOGIN_TEMPLATE = """
             const volumeSlider = document.getElementById('volumeSlider');
             const songName = document.getElementById('songName');
             const songArtist = document.getElementById('songArtist');
+            const sourceTag = document.getElementById('sourceTag');
 
             let currentIndex = 0;
-            let isUserInteracted = false;
+            let currentIframe = null;
+            let isTikTokMode = false;
 
-            function getRandomSong() {
-                return Math.floor(Math.random() * PLAYLIST.length);
+            // ===== HÀM TẠO IF TIKTOK =====
+            function createTikTokIframe(url) {
+                if (currentIframe) {
+                    currentIframe.remove();
+                    currentIframe = null;
+                }
+
+                const iframe = document.createElement('iframe');
+                iframe.style.cssText = 'position:absolute; top:-9999px; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;';
+                iframe.allow = 'autoplay; encrypted-media;';
+                
+                let embedUrl = url;
+                if (url.includes('vt.tiktok.com') || url.includes('tiktok.com')) {
+                    embedUrl = url;
+                }
+                
+                iframe.src = embedUrl;
+                iframe.id = 'tiktokAudioPlayer';
+                document.body.appendChild(iframe);
+                currentIframe = iframe;
+                
+                return iframe;
             }
 
+            // ===== HÀM PHÁT BÀI HÁT =====
             function playSong(index) {
                 const song = PLAYLIST[index];
                 if (!song) return;
                 
                 songName.textContent = `🎵 ${song.name}`;
                 songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                sourceTag.textContent = song.type === 'tiktok' ? '🎵 TIKTOK' : '🎵 MP3';
                 
-                audio.src = song.url;
-                audio.load();
+                isTikTokMode = song.type === 'tiktok';
                 
-                // Thử phát tự động
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                        isUserInteracted = true;
-                    }).catch(() => {
-                        // Bị chặn autoplay -> hiển thị nút Play
-                        playBtn.innerHTML = '<i class="fas fa-play"></i>';
-                        songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">🔊 Nhấn Play để nghe</span>`;
-                    });
+                if (isTikTokMode) {
+                    try {
+                        createTikTokIframe(song.url);
+                        setTimeout(() => {
+                            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        }, 2000);
+                    } catch(e) {
+                        console.warn('Lỗi load TikTok, chuyển sang MP3:', e);
+                        isTikTokMode = false;
+                        playMp3(song.url);
+                    }
+                } else {
+                    playMp3(song.url);
                 }
                 
                 currentIndex = index;
                 try {
                     localStorage.setItem('currentSongIndex', index);
+                    localStorage.setItem('currentSongType', song.type);
                 } catch(e) {}
+            }
+
+            // ===== HÀM PHÁT MP3 =====
+            function playMp3(url) {
+                if (currentIframe) {
+                    currentIframe.remove();
+                    currentIframe = null;
+                }
+                
+                audio.src = url;
+                audio.load();
+                
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    }).catch(() => {
+                        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">🔊 Nhấn Play để nghe</span>`;
+                    });
+                }
+            }
+
+            // ===== HÀM PHÁT NGẪU NHIÊN =====
+            function getRandomSong() {
+                return Math.floor(Math.random() * PLAYLIST.length);
             }
 
             function playRandomSong() {
@@ -1426,38 +1528,51 @@ LOGIN_TEMPLATE = """
             });
 
             playBtn.addEventListener('click', function() {
-                if (audio.paused) {
-                    audio.play().then(() => {
-                        this.innerHTML = '<i class="fas fa-pause"></i>';
-                        const song = PLAYLIST[currentIndex];
-                        if (song) {
-                            songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                if (isTikTokMode) {
+                    if (currentIframe) {
+                        const src = currentIframe.src;
+                        if (this.innerHTML.includes('pause')) {
+                            currentIframe.src = 'about:blank';
+                            this.innerHTML = '<i class="fas fa-play"></i>';
+                            songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
+                        } else {
+                            currentIframe.src = src;
+                            this.innerHTML = '<i class="fas fa-pause"></i>';
+                            const song = PLAYLIST[currentIndex];
+                            if (song) {
+                                songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                            }
                         }
-                        isUserInteracted = true;
-                    }).catch(e => console.warn('Lỗi phát nhạc:', e));
+                    }
                 } else {
-                    audio.pause();
-                    this.innerHTML = '<i class="fas fa-play"></i>';
-                    songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
+                    if (audio.paused) {
+                        audio.play().then(() => {
+                            this.innerHTML = '<i class="fas fa-pause"></i>';
+                            const song = PLAYLIST[currentIndex];
+                            if (song) {
+                                songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                            }
+                        }).catch(e => console.warn('Lỗi phát nhạc:', e));
+                    } else {
+                        audio.pause();
+                        this.innerHTML = '<i class="fas fa-play"></i>';
+                        songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
+                    }
                 }
             });
 
             nextBtn.addEventListener('click', function() {
                 nextSong();
-                // Nếu đang paused thì tự động play
-                if (audio.paused) {
-                    audio.play().catch(() => {});
-                }
             });
 
-            // Tự động chuyển bài khi kết thúc
             audio.addEventListener('ended', function() {
-                nextSong();
+                if (!isTikTokMode) {
+                    nextSong();
+                }
             });
 
             // ===== KHỞI TẠO =====
             function init() {
-                // Khôi phục bài hát đã lưu
                 let savedIndex = null;
                 try {
                     const saved = localStorage.getItem('currentSongIndex');
@@ -1469,13 +1584,12 @@ LOGIN_TEMPLATE = """
                     }
                 } catch(e) {}
                 
-                if (savedIndex !== null) {
-                    playSong(savedIndex);
-                } else {
+                if (savedIndex === null) {
                     playRandomSong();
+                } else {
+                    playSong(savedIndex);
                 }
                 
-                // Khôi phục âm lượng
                 const savedVolume = localStorage.getItem('musicVolume');
                 if (savedVolume !== null) {
                     const vol = parseFloat(savedVolume);
@@ -3262,7 +3376,7 @@ HTML_TEMPLATE = """
         };
     </script>
 
-    <!-- ===== FLOATING MUSIC PLAYER - FIXED ===== -->
+    <!-- ===== FLOATING MUSIC PLAYER - TIKTOK SUPPORT ===== -->
     <style>
         #musicPlayer {
             position: fixed;
@@ -3281,7 +3395,7 @@ HTML_TEMPLATE = """
             box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
             transition: all 0.3s ease;
             font-family: 'Segoe UI', sans-serif;
-            max-width: 320px;
+            max-width: 350px;
         }
         #musicPlayer:hover {
             background: rgba(0, 0, 0, 0.85);
@@ -3391,6 +3505,15 @@ HTML_TEMPLATE = """
             color: #fff;
             transform: rotate(30deg);
         }
+        #sourceTag {
+            font-size: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            color: rgba(255,255,255,0.3);
+            margin-left: 4px;
+            flex-shrink: 0;
+        }
         @media (max-width: 480px) {
             #musicPlayer {
                 padding: 8px 12px;
@@ -3416,6 +3539,10 @@ HTML_TEMPLATE = """
             #nextBtn {
                 font-size: 13px;
             }
+            #sourceTag {
+                font-size: 7px;
+                padding: 1px 4px;
+            }
         }
     </style>
 
@@ -3426,44 +3553,80 @@ HTML_TEMPLATE = """
         <div class="music-info">
             <div class="song-name" id="songName">🎵 Đang tải...</div>
             <div class="song-artist" id="songArtist">
-                <span class="status-dot"></span> Nhạc nền
-            </div>
+                <span class="status-dot"></span> Nhạc nền            </div>
         </div>
         <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.3">
         <button id="nextBtn" title="Bài tiếp theo">
             <i class="fas fa-step-forward"></i>
         </button>
+        <span id="sourceTag">🎵</span>
         <audio id="bgMusic" preload="auto"></audio>
     </div>
 
     <script>
         (function() {
-            // ===== DANH SÁCH NHẠC (Dùng MP3 - Không bị chặn autoplay) =====
+            // ===== DANH SÁCH NHẠC (Hỗ trợ TikTok) =====
             const PLAYLIST = [
                 { 
+                    url: 'https://vt.tiktok.com/ZS4cxjhYc/',
+                    name: 'Nhạc TikTok 1', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cxecTW/',
+                    name: 'Nhạc TikTok 2', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cxe7Sv/',
+                    name: 'Nhạc TikTok 3', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cxSb5v/',
+                    name: 'Nhạc TikTok 4', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cxrDPM/',
+                    name: 'Nhạc TikTok 5', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cxrpsX/',
+                    name: 'Nhạc TikTok 6', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cx5Wbx/',
+                    name: 'Nhạc TikTok 7', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                { 
+                    url: 'https://vt.tiktok.com/ZS4cx5Xtf/',
+                    name: 'Nhạc TikTok 8', 
+                    artist: 'TikTok',
+                    type: 'tiktok'
+                },
+                // Fallback MP3 (nếu TikTok không load được)
+                { 
                     url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-                    name: 'Anh Sẽ Đón Em', 
-                    artist: 'Nguyên ft. Trang (Cukak Remix)' 
+                    name: 'Nhạc Dự Phòng 1', 
+                    artist: 'SoundHelix',
+                    type: 'mp3'
                 },
                 { 
                     url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-                    name: 'Bài hát 2', 
-                    artist: 'Nghệ sĩ 2' 
-                },
-                { 
-                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-                    name: 'Bài hát 3', 
-                    artist: 'Nghệ sĩ 3' 
-                },
-                { 
-                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-                    name: 'Bài hát 4', 
-                    artist: 'Nghệ sĩ 4' 
-                },
-                { 
-                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
-                    name: 'Bài hát 5', 
-                    artist: 'Nghệ sĩ 5' 
+                    name: 'Nhạc Dự Phòng 2', 
+                    artist: 'SoundHelix',
+                    type: 'mp3'
                 }
             ];
 
@@ -3473,41 +3636,93 @@ HTML_TEMPLATE = """
             const volumeSlider = document.getElementById('volumeSlider');
             const songName = document.getElementById('songName');
             const songArtist = document.getElementById('songArtist');
+            const sourceTag = document.getElementById('sourceTag');
 
             let currentIndex = 0;
-            let isUserInteracted = false;
+            let currentIframe = null;
+            let isTikTokMode = false;
 
-            function getRandomSong() {
-                return Math.floor(Math.random() * PLAYLIST.length);
+            // ===== HÀM TẠO IF TIKTOK =====
+            function createTikTokIframe(url) {
+                if (currentIframe) {
+                    currentIframe.remove();
+                    currentIframe = null;
+                }
+
+                const iframe = document.createElement('iframe');
+                iframe.style.cssText = 'position:absolute; top:-9999px; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;';
+                iframe.allow = 'autoplay; encrypted-media;';
+                
+                let embedUrl = url;
+                if (url.includes('vt.tiktok.com') || url.includes('tiktok.com')) {
+                    embedUrl = url;
+                }
+                
+                iframe.src = embedUrl;
+                iframe.id = 'tiktokAudioPlayer';
+                document.body.appendChild(iframe);
+                currentIframe = iframe;
+                
+                return iframe;
             }
 
+            // ===== HÀM PHÁT BÀI HÁT =====
             function playSong(index) {
                 const song = PLAYLIST[index];
                 if (!song) return;
                 
                 songName.textContent = `🎵 ${song.name}`;
                 songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                sourceTag.textContent = song.type === 'tiktok' ? '🎵 TIKTOK' : '🎵 MP3';
                 
-                audio.src = song.url;
-                audio.load();
+                isTikTokMode = song.type === 'tiktok';
                 
-                // Thử phát tự động
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                        isUserInteracted = true;
-                    }).catch(() => {
-                        // Bị chặn autoplay -> hiển thị nút Play
-                        playBtn.innerHTML = '<i class="fas fa-play"></i>';
-                        songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">🔊 Nhấn Play để nghe</span>`;
-                    });
+                if (isTikTokMode) {
+                    try {
+                        createTikTokIframe(song.url);
+                        setTimeout(() => {
+                            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        }, 2000);
+                    } catch(e) {
+                        console.warn('Lỗi load TikTok, chuyển sang MP3:', e);
+                        isTikTokMode = false;
+                        playMp3(song.url);
+                    }
+                } else {
+                    playMp3(song.url);
                 }
                 
                 currentIndex = index;
                 try {
                     localStorage.setItem('currentSongIndex', index);
+                    localStorage.setItem('currentSongType', song.type);
                 } catch(e) {}
+            }
+
+            // ===== HÀM PHÁT MP3 =====
+            function playMp3(url) {
+                if (currentIframe) {
+                    currentIframe.remove();
+                    currentIframe = null;
+                }
+                
+                audio.src = url;
+                audio.load();
+                
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    }).catch(() => {
+                        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">🔊 Nhấn Play để nghe</span>`;
+                    });
+                }
+            }
+
+            // ===== HÀM PHÁT NGẪU NHIÊN =====
+            function getRandomSong() {
+                return Math.floor(Math.random() * PLAYLIST.length);
             }
 
             function playRandomSong() {
@@ -3529,38 +3744,51 @@ HTML_TEMPLATE = """
             });
 
             playBtn.addEventListener('click', function() {
-                if (audio.paused) {
-                    audio.play().then(() => {
-                        this.innerHTML = '<i class="fas fa-pause"></i>';
-                        const song = PLAYLIST[currentIndex];
-                        if (song) {
-                            songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                if (isTikTokMode) {
+                    if (currentIframe) {
+                        const src = currentIframe.src;
+                        if (this.innerHTML.includes('pause')) {
+                            currentIframe.src = 'about:blank';
+                            this.innerHTML = '<i class="fas fa-play"></i>';
+                            songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
+                        } else {
+                            currentIframe.src = src;
+                            this.innerHTML = '<i class="fas fa-pause"></i>';
+                            const song = PLAYLIST[currentIndex];
+                            if (song) {
+                                songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                            }
                         }
-                        isUserInteracted = true;
-                    }).catch(e => console.warn('Lỗi phát nhạc:', e));
+                    }
                 } else {
-                    audio.pause();
-                    this.innerHTML = '<i class="fas fa-play"></i>';
-                    songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
+                    if (audio.paused) {
+                        audio.play().then(() => {
+                            this.innerHTML = '<i class="fas fa-pause"></i>';
+                            const song = PLAYLIST[currentIndex];
+                            if (song) {
+                                songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                            }
+                        }).catch(e => console.warn('Lỗi phát nhạc:', e));
+                    } else {
+                        audio.pause();
+                        this.innerHTML = '<i class="fas fa-play"></i>';
+                        songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
+                    }
                 }
             });
 
             nextBtn.addEventListener('click', function() {
                 nextSong();
-                // Nếu đang paused thì tự động play
-                if (audio.paused) {
-                    audio.play().catch(() => {});
-                }
             });
 
-            // Tự động chuyển bài khi kết thúc
             audio.addEventListener('ended', function() {
-                nextSong();
+                if (!isTikTokMode) {
+                    nextSong();
+                }
             });
 
             // ===== KHỞI TẠO =====
             function init() {
-                // Khôi phục bài hát đã lưu
                 let savedIndex = null;
                 try {
                     const saved = localStorage.getItem('currentSongIndex');
@@ -3572,13 +3800,12 @@ HTML_TEMPLATE = """
                     }
                 } catch(e) {}
                 
-                if (savedIndex !== null) {
-                    playSong(savedIndex);
-                } else {
+                if (savedIndex === null) {
                     playRandomSong();
+                } else {
+                    playSong(savedIndex);
                 }
                 
-                // Khôi phục âm lượng
                 const savedVolume = localStorage.getItem('musicVolume');
                 if (savedVolume !== null) {
                     const vol = parseFloat(savedVolume);
@@ -4265,6 +4492,6 @@ if __name__ == '__main__':
     print("🚀 WEB PNDK TOOL ĐA APP")
     print("📱 http://localhost:5000")
     print("🔐 Đăng nhập để sử dụng")
-    print("🎵 Nhạc nền random (đã fix lỗi autoplay)")
+    print("🎵 Nhạc nền từ TikTok (8 bài)")
     print("=" * 60)
     app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
