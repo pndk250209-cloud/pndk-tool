@@ -1,328 +1,332 @@
 # webpndk.py - Zalo Tool Treo Ngôn + Nhây Tag (Có Đăng Nhập/Đăng Ký)
 # -*- coding: utf-8 -*-
 
-# ===== CHẶN LOG ZALO API =====
-import logging
 import sys
-import os
-import contextlib
-import hashlib
-import uuid
+import traceback
 
-# Tắt tất cả log của thư viện zlapi
-logging.getLogger("zalo").setLevel(logging.ERROR)
-logging.getLogger("zlapi").setLevel(logging.ERROR)
-logging.getLogger("requests").setLevel(logging.ERROR)
-logging.getLogger("urllib3").setLevel(logging.ERROR)
-logging.getLogger("http.client").setLevel(logging.ERROR)
+try:
 
-# Chặn stdout/stderr
-@contextlib.contextmanager
-def suppress_output():
-    """Tạm thời chuyển hướng stdout/stderr vào /dev/null"""
-    with open(os.devnull, 'w') as devnull:
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-        sys.stdout = devnull
-        sys.stderr = devnull
-        try:
-            yield
-        finally:
-            sys.stdout = old_stdout
-            sys.stderr = old_stderr
+    # ===== CHẶN LOG ZALO API =====
+    import logging
+    import os
+    import contextlib
+    import hashlib
+    import uuid
 
-# Ghi đè print để không in ra màn hình
-def null_print(*args, **kwargs):
-    pass
+    # Tắt tất cả log của thư viện zlapi
+    logging.getLogger("zalo").setLevel(logging.ERROR)
+    logging.getLogger("zlapi").setLevel(logging.ERROR)
+    logging.getLogger("requests").setLevel(logging.ERROR)
+    logging.getLogger("urllib3").setLevel(logging.ERROR)
+    logging.getLogger("http.client").setLevel(logging.ERROR)
 
-# Áp dụng cho toàn bộ module
-import builtins
-builtins.print = null_print
+    # Chặn stdout/stderr
+    @contextlib.contextmanager
+    def suppress_output():
+        """Tạm thời chuyển hướng stdout/stderr vào /dev/null"""
+        with open(os.devnull, 'w') as devnull:
+            old_stdout = sys.stdout
+            old_stderr = sys.stderr
+            sys.stdout = devnull
+            sys.stderr = devnull
+            try:
+                yield
+            finally:
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
 
-# ===== IMPORT THƯ VIỆN =====
-from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
-import json
-import asyncio
-import threading
-import time
-import random
-from datetime import datetime
-from account_manager import AccountManager
-from zalo_login_zlapi import (
-    login_with_cookies_imei_async,
-    get_box_chats_async,
-    send_full_message_with_style_async
-)
+    # Ghi đè print để không in ra màn hình
+    def null_print(*args, **kwargs):
+        pass
 
-# ===== LOGGING CHO WEB =====
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('web.log', encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+    # Áp dụng cho toàn bộ module
+    import builtins
+    builtins.print = null_print
 
-# ===== FLASK APP =====
-app = Flask(__name__)
-app.secret_key = 'pndk_zalo_tool_secret_key_2024_v2'
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+    # ===== IMPORT THƯ VIỆN =====
+    from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
+    import json
+    import asyncio
+    import threading
+    import time
+    import random
+    from datetime import datetime
+    from account_manager import AccountManager
+    from zalo_login_zlapi import (
+        login_with_cookies_imei_async,
+        get_box_chats_async,
+        send_full_message_with_style_async
+    )
 
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    # ===== LOGGING CHO WEB =====
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler('web.log', encoding='utf-8'),
+            logging.StreamHandler()
+        ]
+    )
+    logger = logging.getLogger(__name__)
 
-# ===== USER MANAGER =====
-USER_FILE = "users.json"
+    # ===== FLASK APP =====
+    app = Flask(__name__)
+    app.secret_key = 'pndk_zalo_tool_secret_key_2024_v2'
+    app.config['UPLOAD_FOLDER'] = 'uploads'
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-def load_users():
-    if os.path.exists(USER_FILE):
-        try:
-            with open(USER_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            return {}
-    return {}
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-def save_users(users):
-    with open(USER_FILE, 'w', encoding='utf-8') as f:
-        json.dump(users, f, indent=2, ensure_ascii=False)
+    # ===== USER MANAGER =====
+    USER_FILE = "users.json"
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+    def load_users():
+        if os.path.exists(USER_FILE):
+            try:
+                with open(USER_FILE, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except:
+                return {}
+        return {}
 
-# ===== ACCOUNT MANAGER RIÊNG CHO TỪNG USER =====
-account_managers = {}
+    def save_users(users):
+        with open(USER_FILE, 'w', encoding='utf-8') as f:
+            json.dump(users, f, indent=2, ensure_ascii=False)
 
-def get_account_manager():
-    """Lấy account_manager riêng cho từng user"""
-    username = session.get('username')
-    if not username:
-        return None
-    
-    if username not in account_managers:
-        account_managers[username] = AccountManager(username)
-    
-    return account_managers[username]
+    def hash_password(password):
+        return hashlib.sha256(password.encode()).hexdigest()
 
-# ===== SESSION =====
-current_session = {}
-spam_tasks = {}
-nhaytag_tasks = {}
+    # ===== ACCOUNT MANAGER RIÊNG CHO TỪNG USER =====
+    account_managers = {}
 
-# ===== TASKS FILE =====
-def get_tasks_files(username):
-    """Lấy tên file task riêng cho từng user"""
-    return f"tasks_{username}.json", f"nhaytag_tasks_{username}.json"
+    def get_account_manager():
+        """Lấy account_manager riêng cho từng user"""
+        username = session.get('username')
+        if not username:
+            return None
+        
+        if username not in account_managers:
+            account_managers[username] = AccountManager(username)
+        
+        return account_managers[username]
 
-def load_tasks():
-    """Load tasks riêng cho từng user"""
-    global spam_tasks, nhaytag_tasks
-    
-    username = session.get('username', 'default')
-    TASKS_FILE, NHAYTAG_FILE = get_tasks_files(username)
-    
+    # ===== SESSION =====
+    current_session = {}
     spam_tasks = {}
     nhaytag_tasks = {}
-    
-    if os.path.exists(TASKS_FILE):
-        try:
-            with open(TASKS_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                spam_tasks = data
-                logger.info(f"✅ Đã load {len(spam_tasks)} treo ngôn tasks cho user {username}")
-        except Exception as e:
-            logger.error(f"❌ Lỗi load tasks cho {username}: {e}")
-            spam_tasks = {}
-    
-    if os.path.exists(NHAYTAG_FILE):
-        try:
-            with open(NHAYTAG_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                nhaytag_tasks = data
-                logger.info(f"✅ Đã load {len(nhaytag_tasks)} nhây tag tasks cho user {username}")
-        except Exception as e:
-            logger.error(f"❌ Lỗi load nhaytag tasks cho {username}: {e}")
-            nhaytag_tasks = {}
 
-def save_tasks():
-    """Lưu tasks riêng cho từng user"""
-    try:
+    # ===== TASKS FILE =====
+    def get_tasks_files(username):
+        """Lấy tên file task riêng cho từng user"""
+        return f"tasks_{username}.json", f"nhaytag_tasks_{username}.json"
+
+    def load_tasks():
+        """Load tasks riêng cho từng user"""
+        global spam_tasks, nhaytag_tasks
+        
         username = session.get('username', 'default')
         TASKS_FILE, NHAYTAG_FILE = get_tasks_files(username)
         
-        tasks_to_save = {}
-        for task_id, task in spam_tasks.items():
-            task_copy = task.copy()
-            task_copy.pop('stop_flag', None)
-            task_copy.pop('thread', None)
-            tasks_to_save[task_id] = task_copy
+        spam_tasks = {}
+        nhaytag_tasks = {}
         
-        with open(TASKS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(tasks_to_save, f, indent=2, ensure_ascii=False, default=str)
+        if os.path.exists(TASKS_FILE):
+            try:
+                with open(TASKS_FILE, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    spam_tasks = data
+                    logger.info(f"✅ Đã load {len(spam_tasks)} treo ngôn tasks cho user {username}")
+            except Exception as e:
+                logger.error(f"❌ Lỗi load tasks cho {username}: {e}")
+                spam_tasks = {}
         
-        ntags_to_save = {}
-        for task_id, task in nhaytag_tasks.items():
-            task_copy = task.copy()
-            task_copy.pop('stop_flag', None)
-            task_copy.pop('thread', None)
-            ntags_to_save[task_id] = task_copy
-        
-        with open(NHAYTAG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(ntags_to_save, f, indent=2, ensure_ascii=False, default=str)
-    except Exception as e:
-        logger.error(f"❌ Lỗi save tasks cho {session.get('username', 'default')}: {e}")
+        if os.path.exists(NHAYTAG_FILE):
+            try:
+                with open(NHAYTAG_FILE, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    nhaytag_tasks = data
+                    logger.info(f"✅ Đã load {len(nhaytag_tasks)} nhây tag tasks cho user {username}")
+            except Exception as e:
+                logger.error(f"❌ Lỗi load nhaytag tasks cho {username}: {e}")
+                nhaytag_tasks = {}
 
-def cleanup_dead_tasks():
-    """Dọn dẹp task đã chết riêng cho từng user"""
-    for task_id, task in list(spam_tasks.items()):
-        if task.get('status') in ['done', 'error', 'stopped']:
-            if 'finished_at' in task:
-                try:
-                    elapsed = (datetime.now() - datetime.fromisoformat(task['finished_at'])).total_seconds()
-                    if elapsed > 300:
-                        del spam_tasks[task_id]
-                except:
-                    del spam_tasks[task_id]
-        elif task.get('status') == 'running':
-            thread = task.get('thread')
-            if thread and not thread.is_alive():
-                task['status'] = 'error'
-                task['finished_at'] = datetime.now().isoformat()
-                save_tasks()
-    
-    for task_id, task in list(nhaytag_tasks.items()):
-        if task.get('status') in ['done', 'error', 'stopped']:
-            if 'finished_at' in task:
-                try:
-                    elapsed = (datetime.now() - datetime.fromisoformat(task['finished_at'])).total_seconds()
-                    if elapsed > 300:
-                        del nhaytag_tasks[task_id]
-                except:
-                    del nhaytag_tasks[task_id]
-        elif task.get('status') == 'running':
-            thread = task.get('thread')
-            if thread and not thread.is_alive():
-                task['status'] = 'error'
-                task['finished_at'] = datetime.now().isoformat()
-                save_tasks()
-    save_tasks()
+    def save_tasks():
+        """Lưu tasks riêng cho từng user"""
+        try:
+            username = session.get('username', 'default')
+            TASKS_FILE, NHAYTAG_FILE = get_tasks_files(username)
+            
+            tasks_to_save = {}
+            for task_id, task in spam_tasks.items():
+                task_copy = task.copy()
+                task_copy.pop('stop_flag', None)
+                task_copy.pop('thread', None)
+                tasks_to_save[task_id] = task_copy
+            
+            with open(TASKS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(tasks_to_save, f, indent=2, ensure_ascii=False, default=str)
+            
+            ntags_to_save = {}
+            for task_id, task in nhaytag_tasks.items():
+                task_copy = task.copy()
+                task_copy.pop('stop_flag', None)
+                task_copy.pop('thread', None)
+                ntags_to_save[task_id] = task_copy
+            
+            with open(NHAYTAG_FILE, 'w', encoding='utf-8') as f:
+                json.dump(ntags_to_save, f, indent=2, ensure_ascii=False, default=str)
+        except Exception as e:
+            logger.error(f"❌ Lỗi save tasks cho {session.get('username', 'default')}: {e}")
 
-# ===== WORKER NHAY TAG =====
-def worker_nhaytag(imei: str, cookies: dict, group_id: str,
-                   delay: float,
-                   running_flag: threading.Event,
-                   error_queue: list,
-                   user_ids: list = None,
-                   content_text: str = None):
-    """Worker chạy nhây tag trong thread riêng"""
-    try:
-        with suppress_output():
-            from zlapi import ZaloAPI, ThreadType, Message, Mention, MultiMention, MultiMsgStyle, MessageStyle
-            
-            bot = ZaloAPI("api_key", "secret_key", imei, cookies)
-            
-            if content_text:
-                lines = [l.strip() for l in content_text.split('\n') if l.strip()]
-            else:
-                file_path = "nhay.txt"
-                if not os.path.exists(file_path):
-                    with open(file_path, 'w', encoding='utf-8') as f:
-                        f.write("Nội dung nhây tag mặc định")
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    lines = [l.strip() for l in f if l.strip()]
-            
-            if not lines:
-                lines = ["Nội dung nhây tag mặc định"]
-            
-            profiles = {}
-            if user_ids:
-                for i in range(0, len(user_ids), 10):
-                    batch = user_ids[i:i+10]
+    def cleanup_dead_tasks():
+        """Dọn dẹp task đã chết riêng cho từng user"""
+        for task_id, task in list(spam_tasks.items()):
+            if task.get('status') in ['done', 'error', 'stopped']:
+                if 'finished_at' in task:
                     try:
-                        profiles.update(bot.fetchUserInfo(*batch).changed_profiles)
+                        elapsed = (datetime.now() - datetime.fromisoformat(task['finished_at'])).total_seconds()
+                        if elapsed > 300:
+                            del spam_tasks[task_id]
                     except:
-                        pass
-                    time.sleep(0.3)
-            
-            line_index = 0
-            while running_flag and not running_flag.is_set():
-                try:
-                    message_text = lines[line_index]
-                    msg = "@All " + message_text
-                    user_tags = []
-                    if user_ids:
-                        if not msg.endswith(" "):
-                            msg += " "
-                        for uid in user_ids:
-                            name = profiles.get(uid, {}).get("displayName", f"User {uid[-4:]}")
-                            tag = f"@{name}"
-                            user_tags.append(tag)
-                            msg += tag + " "
-                        msg = msg.rstrip()
-                    
-                    mentions = []
-                    all_mention = Mention(uid="-1", length=4, offset=0, auto_format=False)
-                    mentions.append(all_mention)
-                    
-                    if user_ids:
-                        for i, tag in enumerate(user_tags):
-                            search_start = 5 + len(message_text)
-                            if search_start < len(msg):
-                                offset = msg.find(tag, search_start)
-                                if offset != -1:
-                                    mentions.append(Mention(
-                                        uid=user_ids[i], length=len(tag), offset=offset, auto_format=False
-                                    ))
-                    
-                    lines_split = msg.strip().split('\n')
-                    colors = ["#db342e", "#f27806", "#f7b503", "#15a85f", "#1a73e8", "#9c27b0", "#00bcd4", "#ff5722"]
-                    random.shuffle(colors)
-                    styles_list = []
-                    current_offset = 0
-                    for i, line in enumerate(lines_split):
-                        if not line:
-                            current_offset += 1
-                            continue
-                        line_color = colors[i % len(colors)]
-                        styles_list.append(
-                            MessageStyle(offset=current_offset, length=len(line), style="color", color=line_color, auto_format=False)
-                        )
-                        styles_list.append(
-                            MessageStyle(offset=current_offset, length=len(line), style="bold", auto_format=False)
-                        )
-                        current_offset += len(line) + 1
-                    
-                    style = MultiMsgStyle(styles_list)
-                    bot.setTyping(group_id, ThreadType.GROUP)
-                    time.sleep(1.5)
-                    
-                    if mentions and len(mentions) > 0:
-                        m = Message(text=msg, mention=MultiMention(mentions), style=style)
-                    else:
-                        m = Message(text=msg, style=style)
-                    
-                    bot.send(m, thread_id=group_id, thread_type=ThreadType.GROUP)
-                    
-                    line_index += 1
-                    if line_index >= len(lines):
-                        line_index = 0
-                        
-                except Exception as e:
-                    err = str(e)
-                    if "zpw_sek" in err or "600" in err or "cookie" in err.lower():
-                        error_queue.append("cookie_die")
-                        running_flag.clear()
-                        break
-                    logger.error(f"Lỗi nhây tag: {e}")
-                
-                time.sleep(delay)
-    except Exception as e:
-        logger.error(f"Worker nhaytag lỗi: {e}")
+                        del spam_tasks[task_id]
+            elif task.get('status') == 'running':
+                thread = task.get('thread')
+                if thread and not thread.is_alive():
+                    task['status'] = 'error'
+                    task['finished_at'] = datetime.now().isoformat()
+                    save_tasks()
+        
+        for task_id, task in list(nhaytag_tasks.items()):
+            if task.get('status') in ['done', 'error', 'stopped']:
+                if 'finished_at' in task:
+                    try:
+                        elapsed = (datetime.now() - datetime.fromisoformat(task['finished_at'])).total_seconds()
+                        if elapsed > 300:
+                            del nhaytag_tasks[task_id]
+                    except:
+                        del nhaytag_tasks[task_id]
+            elif task.get('status') == 'running':
+                thread = task.get('thread')
+                if thread and not thread.is_alive():
+                    task['status'] = 'error'
+                    task['finished_at'] = datetime.now().isoformat()
+                    save_tasks()
+        save_tasks()
 
-# ===== LOGIN TEMPLATE =====
-LOGIN_TEMPLATE = """
+    # ===== WORKER NHAY TAG =====
+    def worker_nhaytag(imei: str, cookies: dict, group_id: str,
+                       delay: float,
+                       running_flag: threading.Event,
+                       error_queue: list,
+                       user_ids: list = None,
+                       content_text: str = None):
+        """Worker chạy nhây tag trong thread riêng"""
+        try:
+            with suppress_output():
+                from zlapi import ZaloAPI, ThreadType, Message, Mention, MultiMention, MultiMsgStyle, MessageStyle
+                
+                bot = ZaloAPI("api_key", "secret_key", imei, cookies)
+                
+                if content_text:
+                    lines = [l.strip() for l in content_text.split('\n') if l.strip()]
+                else:
+                    file_path = "nhay.txt"
+                    if not os.path.exists(file_path):
+                        with open(file_path, 'w', encoding='utf-8') as f:
+                            f.write("Nội dung nhây tag mặc định")
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        lines = [l.strip() for l in f if l.strip()]
+                
+                if not lines:
+                    lines = ["Nội dung nhây tag mặc định"]
+                
+                profiles = {}
+                if user_ids:
+                    for i in range(0, len(user_ids), 10):
+                        batch = user_ids[i:i+10]
+                        try:
+                            profiles.update(bot.fetchUserInfo(*batch).changed_profiles)
+                        except:
+                            pass
+                        time.sleep(0.3)
+                
+                line_index = 0
+                while running_flag and not running_flag.is_set():
+                    try:
+                        message_text = lines[line_index]
+                        msg = "@All " + message_text
+                        user_tags = []
+                        if user_ids:
+                            if not msg.endswith(" "):
+                                msg += " "
+                            for uid in user_ids:
+                                name = profiles.get(uid, {}).get("displayName", f"User {uid[-4:]}")
+                                tag = f"@{name}"
+                                user_tags.append(tag)
+                                msg += tag + " "
+                            msg = msg.rstrip()
+                        
+                        mentions = []
+                        all_mention = Mention(uid="-1", length=4, offset=0, auto_format=False)
+                        mentions.append(all_mention)
+                        
+                        if user_ids:
+                            for i, tag in enumerate(user_tags):
+                                search_start = 5 + len(message_text)
+                                if search_start < len(msg):
+                                    offset = msg.find(tag, search_start)
+                                    if offset != -1:
+                                        mentions.append(Mention(
+                                            uid=user_ids[i], length=len(tag), offset=offset, auto_format=False
+                                        ))
+                        
+                        lines_split = msg.strip().split('\n')
+                        colors = ["#db342e", "#f27806", "#f7b503", "#15a85f", "#1a73e8", "#9c27b0", "#00bcd4", "#ff5722"]
+                        random.shuffle(colors)
+                        styles_list = []
+                        current_offset = 0
+                        for i, line in enumerate(lines_split):
+                            if not line:
+                                current_offset += 1
+                                continue
+                            line_color = colors[i % len(colors)]
+                            styles_list.append(
+                                MessageStyle(offset=current_offset, length=len(line), style="color", color=line_color, auto_format=False)
+                            )
+                            styles_list.append(
+                                MessageStyle(offset=current_offset, length=len(line), style="bold", auto_format=False)
+                            )
+                            current_offset += len(line) + 1
+                        
+                        style = MultiMsgStyle(styles_list)
+                        bot.setTyping(group_id, ThreadType.GROUP)
+                        time.sleep(1.5)
+                        
+                        if mentions and len(mentions) > 0:
+                            m = Message(text=msg, mention=MultiMention(mentions), style=style)
+                        else:
+                            m = Message(text=msg, style=style)
+                        
+                        bot.send(m, thread_id=group_id, thread_type=ThreadType.GROUP)
+                        
+                        line_index += 1
+                        if line_index >= len(lines):
+                            line_index = 0
+                            
+                    except Exception as e:
+                        err = str(e)
+                        if "zpw_sek" in err or "600" in err or "cookie" in err.lower():
+                            error_queue.append("cookie_die")
+                            running_flag.clear()
+                            break
+                        logger.error(f"Lỗi nhây tag: {e}")
+                    
+                    time.sleep(delay)
+        except Exception as e:
+            logger.error(f"Worker nhaytag lỗi: {e}")
+
+    # ===== LOGIN TEMPLATE =====
+    LOGIN_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -810,8 +814,8 @@ LOGIN_TEMPLATE = """
 </html>
 """
 
-# ===== HTML TEMPLATE =====
-HTML_TEMPLATE = """
+    # ===== HTML TEMPLATE =====
+    HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -2576,663 +2580,662 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# ===== AUTH ROUTES =====
-@app.route('/login')
-def login_page():
-    if session.get('logged_in'):
-        return redirect(url_for('index'))
-    return render_template_string(LOGIN_TEMPLATE)
+    # ===== AUTH ROUTES =====
+    @app.route('/login')
+    def login_page():
+        if session.get('logged_in'):
+            return redirect(url_for('index'))
+        return render_template_string(LOGIN_TEMPLATE)
 
-@app.route('/api/login', methods=['POST'])
-def api_login():
-    try:
-        data = request.get_json()
-        username = data.get('username', '').strip()
-        password = data.get('password', '')
-        
-        if not username or not password:
-            return jsonify({'success': False, 'message': 'Vui lòng nhập đầy đủ!'})
-        
-        users = load_users()
-        user = users.get(username)
-        
-        if not user or user.get('password') != hash_password(password):
-            return jsonify({'success': False, 'message': 'Sai tên đăng nhập hoặc mật khẩu!'})
-        
-        session['logged_in'] = True
-        session['username'] = username
-        return jsonify({'success': True, 'message': 'Đăng nhập thành công!'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    @app.route('/api/login', methods=['POST'])
+    def api_login():
+        try:
+            data = request.get_json()
+            username = data.get('username', '').strip()
+            password = data.get('password', '')
+            
+            if not username or not password:
+                return jsonify({'success': False, 'message': 'Vui lòng nhập đầy đủ!'})
+            
+            users = load_users()
+            user = users.get(username)
+            
+            if not user or user.get('password') != hash_password(password):
+                return jsonify({'success': False, 'message': 'Sai tên đăng nhập hoặc mật khẩu!'})
+            
+            session['logged_in'] = True
+            session['username'] = username
+            return jsonify({'success': True, 'message': 'Đăng nhập thành công!'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/api/register', methods=['POST'])
-def api_register():
-    try:
-        data = request.get_json()
-        username = data.get('username', '').strip()
-        password = data.get('password', '')
-        
-        if not username or not password:
-            return jsonify({'success': False, 'message': 'Vui lòng nhập đầy đủ!'})
-        
-        if len(username) < 3:
-            return jsonify({'success': False, 'message': 'Tên đăng nhập phải có ít nhất 3 ký tự!'})
-        
-        if len(password) < 6:
-            return jsonify({'success': False, 'message': 'Mật khẩu phải có ít nhất 6 ký tự!'})
-        
-        users = load_users()
-        
-        if username in users:
-            return jsonify({'success': False, 'message': 'Tên đăng nhập đã tồn tại!'})
-        
-        users[username] = {
-            'password': hash_password(password),
-            'created_at': datetime.now().isoformat()
-        }
-        save_users(users)
-        return jsonify({'success': True, 'message': 'Đăng ký thành công! Vui lòng đăng nhập.'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    @app.route('/api/register', methods=['POST'])
+    def api_register():
+        try:
+            data = request.get_json()
+            username = data.get('username', '').strip()
+            password = data.get('password', '')
+            
+            if not username or not password:
+                return jsonify({'success': False, 'message': 'Vui lòng nhập đầy đủ!'})
+            
+            if len(username) < 3:
+                return jsonify({'success': False, 'message': 'Tên đăng nhập phải có ít nhất 3 ký tự!'})
+            
+            if len(password) < 6:
+                return jsonify({'success': False, 'message': 'Mật khẩu phải có ít nhất 6 ký tự!'})
+            
+            users = load_users()
+            
+            if username in users:
+                return jsonify({'success': False, 'message': 'Tên đăng nhập đã tồn tại!'})
+            
+            users[username] = {
+                'password': hash_password(password),
+                'created_at': datetime.now().isoformat()
+            }
+            save_users(users)
+            return jsonify({'success': True, 'message': 'Đăng ký thành công! Vui lòng đăng nhập.'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/api/logout', methods=['POST'])
-def api_logout():
-    username = session.get('username')
-    if username:
-        # Xóa account_manager của user khỏi bộ nhớ
-        if username in account_managers:
-            del account_managers[username]
-    session.clear()
-    return jsonify({'success': True, 'message': 'Đã đăng xuất!'})
+    @app.route('/api/logout', methods=['POST'])
+    def api_logout():
+        username = session.get('username')
+        if username:
+            if username in account_managers:
+                del account_managers[username]
+        session.clear()
+        return jsonify({'success': True, 'message': 'Đã đăng xuất!'})
 
-@app.before_request
-def require_login():
-    allowed_routes = ['login_page', 'api_login', 'api_register', 'static']
-    if request.endpoint in allowed_routes:
-        return
-    if not session.get('logged_in'):
-        return redirect(url_for('login_page'))
+    @app.before_request
+    def require_login():
+        allowed_routes = ['login_page', 'api_login', 'api_register', 'static']
+        if request.endpoint in allowed_routes:
+            return
+        if not session.get('logged_in'):
+            return redirect(url_for('login_page'))
 
-# ===== FLASK ROUTES =====
-@app.route('/')
-def index():
-    return render_template_string(HTML_TEMPLATE, username=session.get('username', 'User'))
+    # ===== FLASK ROUTES =====
+    @app.route('/')
+    def index():
+        return render_template_string(HTML_TEMPLATE, username=session.get('username', 'User'))
 
-# ===== ACCOUNT ROUTES =====
-@app.route('/add_account', methods=['POST'])
-def add_account():
-    try:
-        data = request.get_json()
-        name = data.get('name', '').strip()
-        cookies = data.get('cookies', '').strip()
-        imei = data.get('imei', '').strip()
-        note = data.get('note', '').strip()
+    # ===== ACCOUNT ROUTES =====
+    @app.route('/add_account', methods=['POST'])
+    def add_account():
+        try:
+            data = request.get_json()
+            name = data.get('name', '').strip()
+            cookies = data.get('cookies', '').strip()
+            imei = data.get('imei', '').strip()
+            note = data.get('note', '').strip()
+            
+            if not name or not cookies or not imei:
+                return jsonify({'success': False, 'message': 'Thiếu thông tin!'})
+            
+            am = get_account_manager()
+            if not am:
+                return jsonify({'success': False, 'message': 'Vui lòng đăng nhập!'})
+            
+            success, result = am.add_account(name, cookies, imei, note)
+            if success:
+                return jsonify({'success': True, 'message': f'Đã thêm {name}!', 'account_id': result})
+            else:
+                return jsonify({'success': False, 'message': result})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
+
+    @app.route('/get_accounts', methods=['GET'])
+    def get_accounts():
+        am = get_account_manager()
+        if not am:
+            return jsonify({'accounts': [], 'current_id': None, 'current_name': None})
         
-        if not name or not cookies or not imei:
-            return jsonify({'success': False, 'message': 'Thiếu thông tin!'})
+        accounts = am.list_accounts()
+        current = am.get_current_account()
+        return jsonify({
+            'accounts': accounts,
+            'current_id': current.get('id') if current else None,
+            'current_name': current.get('name') if current else None
+        })
+
+    @app.route('/use_account/<account_id>', methods=['POST'])
+    def use_account(account_id):
+        global current_session
         
         am = get_account_manager()
         if not am:
             return jsonify({'success': False, 'message': 'Vui lòng đăng nhập!'})
         
-        success, result = am.add_account(name, cookies, imei, note)
-        if success:
-            return jsonify({'success': True, 'message': f'Đã thêm {name}!', 'account_id': result})
-        else:
-            return jsonify({'success': False, 'message': result})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        try:
+            account = am.get_account(account_id)
+            if not account:
+                return jsonify({'success': False, 'message': 'Không tìm thấy tài khoản!'})
+            
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            result = loop.run_until_complete(
+                login_with_cookies_imei_async(account['cookies'], account['imei'])
+            )
+            loop.close()
+            
+            if result.get('success'):
+                current_session = {
+                    'account_id': account_id,
+                    'cookies': result.get('cookies', {}),
+                    'user_info': result.get('user_info', {}),
+                    'imei': account['imei']
+                }
+                
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                boxes = loop.run_until_complete(
+                    get_box_chats_async(account['imei'], result.get('cookies', {}))
+                )
+                loop.close()
+                
+                am.update_login_status(account_id, True, len(boxes))
+                am.set_current_account(account_id)
+                return jsonify({
+                    'success': True, 
+                    'message': f'Đăng nhập thành công! {len(boxes)} box chat',
+                    'boxes': boxes
+                })
+            else:
+                am.update_login_status(account_id, False)
+                return jsonify({'success': False, 'message': result.get('message', 'Đăng nhập thất bại!')})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/get_accounts', methods=['GET'])
-def get_accounts():
-    am = get_account_manager()
-    if not am:
-        return jsonify({'accounts': [], 'current_id': None, 'current_name': None})
-    
-    accounts = am.list_accounts()
-    current = am.get_current_account()
-    return jsonify({
-        'accounts': accounts,
-        'current_id': current.get('id') if current else None,
-        'current_name': current.get('name') if current else None
-    })
+    @app.route('/delete_account/<account_id>', methods=['DELETE'])
+    def delete_account(account_id):
+        am = get_account_manager()
+        if not am:
+            return jsonify({'success': False, 'message': 'Vui lòng đăng nhập!'})
+        
+        try:
+            success = am.delete_account(account_id)
+            return jsonify({'success': success, 'message': 'Đã xóa!' if success else 'Không tìm thấy!'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/use_account/<account_id>', methods=['POST'])
-def use_account(account_id):
-    global current_session
-    
-    am = get_account_manager()
-    if not am:
-        return jsonify({'success': False, 'message': 'Vui lòng đăng nhập!'})
-    
-    try:
-        account = am.get_account(account_id)
-        if not account:
-            return jsonify({'success': False, 'message': 'Không tìm thấy tài khoản!'})
-        
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(
-            login_with_cookies_imei_async(account['cookies'], account['imei'])
-        )
-        loop.close()
-        
-        if result.get('success'):
-            current_session = {
-                'account_id': account_id,
-                'cookies': result.get('cookies', {}),
-                'user_info': result.get('user_info', {}),
-                'imei': account['imei']
-            }
+    # ===== BOX ROUTES =====
+    @app.route('/get_boxes', methods=['GET'])
+    def get_boxes():
+        global current_session
+        try:
+            if not current_session or not current_session.get('cookies'):
+                return jsonify({'success': False, 'message': 'Chưa đăng nhập!'})
             
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             boxes = loop.run_until_complete(
-                get_box_chats_async(account['imei'], result.get('cookies', {}))
+                get_box_chats_async(current_session.get('imei', ''), current_session.get('cookies', {}))
             )
             loop.close()
+            return jsonify({'success': True, 'boxes': boxes})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
+
+    @app.route('/get_members/<group_id>', methods=['GET'])
+    def get_members(group_id):
+        global current_session
+        try:
+            if not current_session or not current_session.get('cookies'):
+                return jsonify({'success': False, 'message': 'Chưa đăng nhập!'})
             
-            am.update_login_status(account_id, True, len(boxes))
-            am.set_current_account(account_id)
+            from zlapi import ZaloAPI
+            bot = ZaloAPI("api_key", "secret_key", current_session.get('imei', ''), current_session.get('cookies', {}))
+            
+            info = bot.fetchGroupInfo(group_id)
+            members = []
+            for mem in info.gridInfoMap[group_id]["memVerList"]:
+                uid = mem.split("_")[0]
+                try:
+                    user_info = bot.fetchUserInfo(uid)
+                    name = user_info.changed_profiles[uid]["displayName"]
+                except:
+                    name = f"User_{uid}"
+                members.append({"id": uid, "name": name})
+            
+            return jsonify({'success': True, 'members': members})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
+
+    # ===== TREO NGÔN ROUTES =====
+    @app.route('/start_treongon', methods=['POST'])
+    def start_treongon():
+        global current_session, spam_tasks
+        try:
+            data = request.get_json()
+            box_id = data.get('box_id')
+            box_name = data.get('box_name')
+            content = data.get('content')
+            delay = float(data.get('delay', 2))
+            total = int(data.get('total', 1))
+            tag_all = data.get('tag_all', True)
+            tag_text = data.get('tag_text', '@All').strip()
+            tag_color = data.get('tag_color', '#db342e')
+            colored = data.get('colored', True)
+            bold = data.get('bold', True)
+            color = data.get('color', '#db342e')
+            font_size = str(data.get('font_size', '15'))
+            multi_color = data.get('multi_color', False)
+
+            if not box_id or not content:
+                return jsonify({'success': False, 'message': 'Thiếu thông tin!'})
+            if not current_session or not current_session.get('cookies'):
+                return jsonify({'success': False, 'message': 'Chưa đăng nhập!'})
+
+            username = session.get('username', 'default')
+            task_id = f"treongon_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            stop_flag = threading.Event()
+            
+            spam_tasks[task_id] = {
+                'type': 'treongon',
+                'status': 'running',
+                'box_name': box_name,
+                'box_id': box_id,
+                'total': total,
+                'delay': delay,
+                'sent': 0,
+                'progress': 0,
+                'content': content,
+                'tag_all': tag_all,
+                'tag_text': tag_text,
+                'tag_color': tag_color,
+                'colored': colored,
+                'bold': bold,
+                'color': color,
+                'font_size': font_size,
+                'multi_color': multi_color,
+                'imei': current_session.get('imei', ''),
+                'stop_flag': stop_flag,
+                'thread': None,
+                'finished_at': None,
+                'error': None,
+                'username': username
+            }
+            
+            save_tasks()
+
+            thread = threading.Thread(
+                target=run_treongon_task, 
+                args=(task_id, current_session.get('imei', ''), current_session.get('cookies', {}))
+            )
+            thread.daemon = True
+            thread.start()
+            spam_tasks[task_id]['thread'] = thread
+
+            tag_info = f"🏷 {tag_text}" if tag_all else "🔕 Không tag"
             return jsonify({
                 'success': True, 
-                'message': f'Đăng nhập thành công! {len(boxes)} box chat',
-                'boxes': boxes
+                'message': f'Đã bắt đầu treo vào {box_name} ({tag_info}) | Delay: {delay}s | {total} lần',
+                'task_id': task_id
             })
-        else:
-            am.update_login_status(account_id, False)
-            return jsonify({'success': False, 'message': result.get('message', 'Đăng nhập thất bại!')})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        except Exception as e:
+            logger.error(f"Lỗi start_treongon: {e}")
+            return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/delete_account/<account_id>', methods=['DELETE'])
-def delete_account(account_id):
-    am = get_account_manager()
-    if not am:
-        return jsonify({'success': False, 'message': 'Vui lòng đăng nhập!'})
-    
-    try:
-        success = am.delete_account(account_id)
-        return jsonify({'success': success, 'message': 'Đã xóa!' if success else 'Không tìm thấy!'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    def run_treongon_task(task_id, imei, cookies):
+        try:
+            task = spam_tasks.get(task_id)
+            if not task:
+                return
+            
+            box_id = task['box_id']
+            content = task['content']
+            total = task['total']
+            delay = task['delay']
+            stop_flag = task.get('stop_flag')
+            tag_all = task.get('tag_all', True)
+            tag_text = task.get('tag_text', '@All')
+            tag_color = task.get('tag_color', '#db342e')
+            colored = task.get('colored', True)
+            bold = task.get('bold', True)
+            color = task.get('color', '#db342e')
+            font_size = task.get('font_size', '15')
+            multi_color = task.get('multi_color', False)
 
-# ===== BOX ROUTES =====
-@app.route('/get_boxes', methods=['GET'])
-def get_boxes():
-    global current_session
-    try:
-        if not current_session or not current_session.get('cookies'):
-            return jsonify({'success': False, 'message': 'Chưa đăng nhập!'})
-        
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        boxes = loop.run_until_complete(
-            get_box_chats_async(current_session.get('imei', ''), current_session.get('cookies', {}))
-        )
-        loop.close()
-        return jsonify({'success': True, 'boxes': boxes})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/get_members/<group_id>', methods=['GET'])
-def get_members(group_id):
-    global current_session
-    try:
-        if not current_session or not current_session.get('cookies'):
-            return jsonify({'success': False, 'message': 'Chưa đăng nhập!'})
-        
-        from zlapi import ZaloAPI
-        bot = ZaloAPI("api_key", "secret_key", current_session.get('imei', ''), current_session.get('cookies', {}))
-        
-        info = bot.fetchGroupInfo(group_id)
-        members = []
-        for mem in info.gridInfoMap[group_id]["memVerList"]:
-            uid = mem.split("_")[0]
-            try:
-                user_info = bot.fetchUserInfo(uid)
-                name = user_info.changed_profiles[uid]["displayName"]
-            except:
-                name = f"User_{uid}"
-            members.append({"id": uid, "name": name})
-        
-        return jsonify({'success': True, 'members': members})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-# ===== TREO NGÔN ROUTES =====
-@app.route('/start_treongon', methods=['POST'])
-def start_treongon():
-    global current_session, spam_tasks
-    try:
-        data = request.get_json()
-        box_id = data.get('box_id')
-        box_name = data.get('box_name')
-        content = data.get('content')
-        delay = float(data.get('delay', 2))
-        total = int(data.get('total', 1))
-        tag_all = data.get('tag_all', True)
-        tag_text = data.get('tag_text', '@All').strip()
-        tag_color = data.get('tag_color', '#db342e')
-        colored = data.get('colored', True)
-        bold = data.get('bold', True)
-        color = data.get('color', '#db342e')
-        font_size = str(data.get('font_size', '15'))
-        multi_color = data.get('multi_color', False)
-
-        if not box_id or not content:
-            return jsonify({'success': False, 'message': 'Thiếu thông tin!'})
-        if not current_session or not current_session.get('cookies'):
-            return jsonify({'success': False, 'message': 'Chưa đăng nhập!'})
-
-        username = session.get('username', 'default')
-        task_id = f"treongon_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        stop_flag = threading.Event()
-        
-        spam_tasks[task_id] = {
-            'type': 'treongon',
-            'status': 'running',
-            'box_name': box_name,
-            'box_id': box_id,
-            'total': total,
-            'delay': delay,
-            'sent': 0,
-            'progress': 0,
-            'content': content,
-            'tag_all': tag_all,
-            'tag_text': tag_text,
-            'tag_color': tag_color,
-            'colored': colored,
-            'bold': bold,
-            'color': color,
-            'font_size': font_size,
-            'multi_color': multi_color,
-            'imei': current_session.get('imei', ''),
-            'stop_flag': stop_flag,
-            'thread': None,
-            'finished_at': None,
-            'error': None,
-            'username': username
-        }
-        
-        save_tasks()
-
-        thread = threading.Thread(
-            target=run_treongon_task, 
-            args=(task_id, current_session.get('imei', ''), current_session.get('cookies', {}))
-        )
-        thread.daemon = True
-        thread.start()
-        spam_tasks[task_id]['thread'] = thread
-
-        tag_info = f"🏷 {tag_text}" if tag_all else "🔕 Không tag"
-        return jsonify({
-            'success': True, 
-            'message': f'Đã bắt đầu treo vào {box_name} ({tag_info}) | Delay: {delay}s | {total} lần',
-            'task_id': task_id
-        })
-    except Exception as e:
-        logger.error(f"Lỗi start_treongon: {e}")
-        return jsonify({'success': False, 'message': str(e)})
-
-def run_treongon_task(task_id, imei, cookies):
-    try:
-        task = spam_tasks.get(task_id)
-        if not task:
-            return
-        
-        box_id = task['box_id']
-        content = task['content']
-        total = task['total']
-        delay = task['delay']
-        stop_flag = task.get('stop_flag')
-        tag_all = task.get('tag_all', True)
-        tag_text = task.get('tag_text', '@All')
-        tag_color = task.get('tag_color', '#db342e')
-        colored = task.get('colored', True)
-        bold = task.get('bold', True)
-        color = task.get('color', '#db342e')
-        font_size = task.get('font_size', '15')
-        multi_color = task.get('multi_color', False)
-
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        sent = loop.run_until_complete(
-            send_full_message_with_style_async(
-                imei, cookies, box_id, content, 
-                delay, total, stop_flag, 
-                tag_all, tag_text, tag_color,
-                colored, bold, color, font_size, multi_color
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            sent = loop.run_until_complete(
+                send_full_message_with_style_async(
+                    imei, cookies, box_id, content, 
+                    delay, total, stop_flag, 
+                    tag_all, tag_text, tag_color,
+                    colored, bold, color, font_size, multi_color
+                )
             )
-        )
-        loop.close()
+            loop.close()
 
-        task['sent'] = sent
-        task['progress'] = 100 if sent > 0 else 0
-        task['finished_at'] = datetime.now().isoformat()
-        
-        if stop_flag and stop_flag.is_set():
+            task['sent'] = sent
+            task['progress'] = 100 if sent > 0 else 0
+            task['finished_at'] = datetime.now().isoformat()
+            
+            if stop_flag and stop_flag.is_set():
+                task['status'] = 'stopped'
+            else:
+                task['status'] = 'done' if sent > 0 else 'error'
+            
+            save_tasks()
+            logger.info(f"Treo ngôn task {task_id} hoàn thành: {sent}/{total}")
+            
+        except Exception as e:
+            logger.error(f"Lỗi run_treongon_task {task_id}: {e}")
+            if task_id in spam_tasks:
+                spam_tasks[task_id]['status'] = 'error'
+                spam_tasks[task_id]['error'] = str(e)
+                spam_tasks[task_id]['finished_at'] = datetime.now().isoformat()
+                save_tasks()
+
+    # ===== NHAY TAG ROUTES =====
+    @app.route('/start_nhaytag', methods=['POST'])
+    def start_nhaytag():
+        global current_session, nhaytag_tasks
+        try:
+            data = request.get_json()
+            box_id = data.get('box_id')
+            box_name = data.get('box_name')
+            delay = float(data.get('delay', 5))
+            user_ids = data.get('user_ids', [])
+            content_text = data.get('content_text', '')
+
+            if not box_id:
+                return jsonify({'success': False, 'message': 'Thiếu box_id!'})
+            if not user_ids:
+                return jsonify({'success': False, 'message': 'Chọn ít nhất 1 thành viên!'})
+            if not content_text:
+                return jsonify({'success': False, 'message': 'Vui lòng upload file nội dung!'})
+            if not current_session or not current_session.get('cookies'):
+                return jsonify({'success': False, 'message': 'Chưa đăng nhập!'})
+
+            username = session.get('username', 'default')
+            task_id = f"nhaytag_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            stop_flag = threading.Event()
+            
+            nhaytag_tasks[task_id] = {
+                'type': 'nhaytag',
+                'status': 'running',
+                'box_name': box_name,
+                'box_id': box_id,
+                'delay': delay,
+                'user_ids': user_ids,
+                'member_count': len(user_ids),
+                'content_text': content_text,
+                'imei': current_session.get('imei', ''),
+                'stop_flag': stop_flag,
+                'thread': None,
+                'finished_at': None,
+                'error': None,
+                'username': username
+            }
+            
+            save_tasks()
+
+            thread = threading.Thread(
+                target=run_nhaytag_task,
+                args=(task_id, current_session.get('imei', ''), current_session.get('cookies', {}))
+            )
+            thread.daemon = True
+            thread.start()
+            nhaytag_tasks[task_id]['thread'] = thread
+
+            return jsonify({
+                'success': True,
+                'message': f'Đã bắt đầu nhây tag vào {box_name} | Delay: {delay}s | Tag {len(user_ids)} người',
+                'task_id': task_id
+            })
+        except Exception as e:
+            logger.error(f"Lỗi start_nhaytag: {e}")
+            return jsonify({'success': False, 'message': str(e)})
+
+    def run_nhaytag_task(task_id, imei, cookies):
+        try:
+            task = nhaytag_tasks.get(task_id)
+            if not task:
+                return
+            
+            box_id = task['box_id']
+            delay = task['delay']
+            user_ids = task['user_ids']
+            content_text = task.get('content_text', '')
+            stop_flag = task.get('stop_flag')
+            
+            error_queue = []
+            worker_nhaytag(imei, cookies, box_id, delay, stop_flag, error_queue, user_ids, content_text)
+            
+            if error_queue and 'cookie_die' in error_queue:
+                task['status'] = 'die'
+            else:
+                task['status'] = 'done'
+            
+            task['finished_at'] = datetime.now().isoformat()
+            save_tasks()
+            logger.info(f"Nhây tag task {task_id} hoàn thành")
+            
+        except Exception as e:
+            logger.error(f"Lỗi run_nhaytag_task {task_id}: {e}")
+            if task_id in nhaytag_tasks:
+                nhaytag_tasks[task_id]['status'] = 'error'
+                nhaytag_tasks[task_id]['error'] = str(e)
+                nhaytag_tasks[task_id]['finished_at'] = datetime.now().isoformat()
+                save_tasks()
+
+    # ===== TASK MANAGEMENT =====
+    @app.route('/stop_spam/<task_id>', methods=['POST'])
+    def stop_spam(task_id):
+        global spam_tasks
+        try:
+            task = spam_tasks.get(task_id)
+            if not task:
+                return jsonify({'success': False, 'message': 'Không tìm thấy task'})
+            
+            username = session.get('username', 'default')
+            if task.get('username') != username:
+                return jsonify({'success': False, 'message': 'Bạn không có quyền dừng task này!'})
+            
+            stop_flag = task.get('stop_flag')
+            if stop_flag:
+                stop_flag.set()
+            
             task['status'] = 'stopped'
-        else:
-            task['status'] = 'done' if sent > 0 else 'error'
-        
-        save_tasks()
-        logger.info(f"Treo ngôn task {task_id} hoàn thành: {sent}/{total}")
-        
-    except Exception as e:
-        logger.error(f"Lỗi run_treongon_task {task_id}: {e}")
-        if task_id in spam_tasks:
-            spam_tasks[task_id]['status'] = 'error'
-            spam_tasks[task_id]['error'] = str(e)
-            spam_tasks[task_id]['finished_at'] = datetime.now().isoformat()
+            task['finished_at'] = datetime.now().isoformat()
             save_tasks()
+            
+            return jsonify({'success': True, 'message': f'Đã dừng task {task_id}'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
 
-# ===== NHAY TAG ROUTES =====
-@app.route('/start_nhaytag', methods=['POST'])
-def start_nhaytag():
-    global current_session, nhaytag_tasks
-    try:
-        data = request.get_json()
-        box_id = data.get('box_id')
-        box_name = data.get('box_name')
-        delay = float(data.get('delay', 5))
-        user_ids = data.get('user_ids', [])
-        content_text = data.get('content_text', '')
-
-        if not box_id:
-            return jsonify({'success': False, 'message': 'Thiếu box_id!'})
-        if not user_ids:
-            return jsonify({'success': False, 'message': 'Chọn ít nhất 1 thành viên!'})
-        if not content_text:
-            return jsonify({'success': False, 'message': 'Vui lòng upload file nội dung!'})
-        if not current_session or not current_session.get('cookies'):
-            return jsonify({'success': False, 'message': 'Chưa đăng nhập!'})
-
-        username = session.get('username', 'default')
-        task_id = f"nhaytag_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        stop_flag = threading.Event()
-        
-        nhaytag_tasks[task_id] = {
-            'type': 'nhaytag',
-            'status': 'running',
-            'box_name': box_name,
-            'box_id': box_id,
-            'delay': delay,
-            'user_ids': user_ids,
-            'member_count': len(user_ids),
-            'content_text': content_text,
-            'imei': current_session.get('imei', ''),
-            'stop_flag': stop_flag,
-            'thread': None,
-            'finished_at': None,
-            'error': None,
-            'username': username
-        }
-        
-        save_tasks()
-
-        thread = threading.Thread(
-            target=run_nhaytag_task,
-            args=(task_id, current_session.get('imei', ''), current_session.get('cookies', {}))
-        )
-        thread.daemon = True
-        thread.start()
-        nhaytag_tasks[task_id]['thread'] = thread
-
-        return jsonify({
-            'success': True,
-            'message': f'Đã bắt đầu nhây tag vào {box_name} | Delay: {delay}s | Tag {len(user_ids)} người',
-            'task_id': task_id
-        })
-    except Exception as e:
-        logger.error(f"Lỗi start_nhaytag: {e}")
-        return jsonify({'success': False, 'message': str(e)})
-
-def run_nhaytag_task(task_id, imei, cookies):
-    try:
-        task = nhaytag_tasks.get(task_id)
-        if not task:
-            return
-        
-        box_id = task['box_id']
-        delay = task['delay']
-        user_ids = task['user_ids']
-        content_text = task.get('content_text', '')
-        stop_flag = task.get('stop_flag')
-        
-        error_queue = []
-        worker_nhaytag(imei, cookies, box_id, delay, stop_flag, error_queue, user_ids, content_text)
-        
-        if error_queue and 'cookie_die' in error_queue:
-            task['status'] = 'die'
-        else:
-            task['status'] = 'done'
-        
-        task['finished_at'] = datetime.now().isoformat()
-        save_tasks()
-        logger.info(f"Nhây tag task {task_id} hoàn thành")
-        
-    except Exception as e:
-        logger.error(f"Lỗi run_nhaytag_task {task_id}: {e}")
-        if task_id in nhaytag_tasks:
-            nhaytag_tasks[task_id]['status'] = 'error'
-            nhaytag_tasks[task_id]['error'] = str(e)
-            nhaytag_tasks[task_id]['finished_at'] = datetime.now().isoformat()
+    @app.route('/stop_nhaytag/<task_id>', methods=['POST'])
+    def stop_nhaytag(task_id):
+        global nhaytag_tasks
+        try:
+            task = nhaytag_tasks.get(task_id)
+            if not task:
+                return jsonify({'success': False, 'message': 'Không tìm thấy task'})
+            
+            username = session.get('username', 'default')
+            if task.get('username') != username:
+                return jsonify({'success': False, 'message': 'Bạn không có quyền dừng task này!'})
+            
+            stop_flag = task.get('stop_flag')
+            if stop_flag:
+                stop_flag.set()
+            
+            task['status'] = 'stopped'
+            task['finished_at'] = datetime.now().isoformat()
             save_tasks()
+            
+            return jsonify({'success': True, 'message': f'Đã dừng nhây tag task {task_id}'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
 
-# ===== TASK MANAGEMENT =====
-@app.route('/stop_spam/<task_id>', methods=['POST'])
-def stop_spam(task_id):
-    global spam_tasks
-    try:
-        task = spam_tasks.get(task_id)
-        if not task:
-            return jsonify({'success': False, 'message': 'Không tìm thấy task'})
+    @app.route('/stop_all_tasks', methods=['POST'])
+    def stop_all_tasks():
+        global spam_tasks, nhaytag_tasks
         
-        # Kiểm tra task có phải của user hiện tại không
-        username = session.get('username', 'default')
-        if task.get('username') != username:
-            return jsonify({'success': False, 'message': 'Bạn không có quyền dừng task này!'})
+        load_tasks()
         
-        stop_flag = task.get('stop_flag')
-        if stop_flag:
-            stop_flag.set()
-        
-        task['status'] = 'stopped'
-        task['finished_at'] = datetime.now().isoformat()
-        save_tasks()
-        
-        return jsonify({'success': True, 'message': f'Đã dừng task {task_id}'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        try:
+            stopped = 0
+            username = session.get('username', 'default')
+            
+            for task_id, task in list(spam_tasks.items()):
+                if task.get('username') == username and task.get('status') == 'running':
+                    stop_flag = task.get('stop_flag')
+                    if stop_flag:
+                        stop_flag.set()
+                    task['status'] = 'stopped'
+                    task['finished_at'] = datetime.now().isoformat()
+                    stopped += 1
+            
+            for task_id, task in list(nhaytag_tasks.items()):
+                if task.get('username') == username and task.get('status') == 'running':
+                    stop_flag = task.get('stop_flag')
+                    if stop_flag:
+                        stop_flag.set()
+                    task['status'] = 'stopped'
+                    task['finished_at'] = datetime.now().isoformat()
+                    stopped += 1
+            
+            save_tasks()
+            return jsonify({'success': True, 'message': f'Đã dừng {stopped} task của bạn'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/stop_nhaytag/<task_id>', methods=['POST'])
-def stop_nhaytag(task_id):
-    global nhaytag_tasks
-    try:
-        task = nhaytag_tasks.get(task_id)
-        if not task:
-            return jsonify({'success': False, 'message': 'Không tìm thấy task'})
-        
-        # Kiểm tra task có phải của user hiện tại không
-        username = session.get('username', 'default')
-        if task.get('username') != username:
-            return jsonify({'success': False, 'message': 'Bạn không có quyền dừng task này!'})
-        
-        stop_flag = task.get('stop_flag')
-        if stop_flag:
-            stop_flag.set()
-        
-        task['status'] = 'stopped'
-        task['finished_at'] = datetime.now().isoformat()
-        save_tasks()
-        
-        return jsonify({'success': True, 'message': f'Đã dừng nhây tag task {task_id}'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    @app.route('/remove_task/<task_id>', methods=['DELETE'])
+    def remove_task(task_id):
+        global spam_tasks, nhaytag_tasks
+        try:
+            username = session.get('username', 'default')
+            
+            if task_id in spam_tasks:
+                if spam_tasks[task_id].get('username') != username:
+                    return jsonify({'success': False, 'message': 'Bạn không có quyền xóa task này!'})
+                del spam_tasks[task_id]
+            elif task_id in nhaytag_tasks:
+                if nhaytag_tasks[task_id].get('username') != username:
+                    return jsonify({'success': False, 'message': 'Bạn không có quyền xóa task này!'})
+                del nhaytag_tasks[task_id]
+            else:
+                return jsonify({'success': False, 'message': 'Không tìm thấy task'})
+            save_tasks()
+            return jsonify({'success': True, 'message': 'Đã xóa task'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/stop_all_tasks', methods=['POST'])
-def stop_all_tasks():
-    """Chỉ dừng task của user hiện tại"""
-    global spam_tasks, nhaytag_tasks
-    
-    load_tasks()
-    
-    try:
-        stopped = 0
-        username = session.get('username', 'default')
+    @app.route('/clear_finished_tasks', methods=['POST'])
+    def clear_finished_tasks():
+        global spam_tasks, nhaytag_tasks
         
-        for task_id, task in list(spam_tasks.items()):
-            if task.get('username') == username and task.get('status') == 'running':
-                stop_flag = task.get('stop_flag')
-                if stop_flag:
-                    stop_flag.set()
-                task['status'] = 'stopped'
-                task['finished_at'] = datetime.now().isoformat()
-                stopped += 1
+        load_tasks()
         
-        for task_id, task in list(nhaytag_tasks.items()):
-            if task.get('username') == username and task.get('status') == 'running':
-                stop_flag = task.get('stop_flag')
-                if stop_flag:
-                    stop_flag.set()
-                task['status'] = 'stopped'
-                task['finished_at'] = datetime.now().isoformat()
-                stopped += 1
-        
-        save_tasks()
-        return jsonify({'success': True, 'message': f'Đã dừng {stopped} task của bạn'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        try:
+            finished = ['done', 'error', 'stopped']
+            username = session.get('username', 'default')
+            to_remove = []
+            
+            for tid, task in spam_tasks.items():
+                if task.get('username') == username and task.get('status') in finished:
+                    to_remove.append(('spam', tid))
+            
+            for tid, task in nhaytag_tasks.items():
+                if task.get('username') == username and task.get('status') in finished:
+                    to_remove.append(('nhaytag', tid))
+            
+            for type_, tid in to_remove:
+                if type_ == 'spam':
+                    del spam_tasks[tid]
+                else:
+                    del nhaytag_tasks[tid]
+            
+            save_tasks()
+            return jsonify({'success': True, 'message': f'Đã xóa {len(to_remove)} task của bạn'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/remove_task/<task_id>', methods=['DELETE'])
-def remove_task(task_id):
-    global spam_tasks, nhaytag_tasks
-    try:
-        # Kiểm tra task thuộc user nào
-        username = session.get('username', 'default')
+    @app.route('/get_all_tasks', methods=['GET'])
+    def get_all_tasks():
+        global spam_tasks, nhaytag_tasks
         
-        if task_id in spam_tasks:
-            if spam_tasks[task_id].get('username') != username:
-                return jsonify({'success': False, 'message': 'Bạn không có quyền xóa task này!'})
-            del spam_tasks[task_id]
-        elif task_id in nhaytag_tasks:
-            if nhaytag_tasks[task_id].get('username') != username:
-                return jsonify({'success': False, 'message': 'Bạn không có quyền xóa task này!'})
-            del nhaytag_tasks[task_id]
-        else:
-            return jsonify({'success': False, 'message': 'Không tìm thấy task'})
-        save_tasks()
-        return jsonify({'success': True, 'message': 'Đã xóa task'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/clear_finished_tasks', methods=['POST'])
-def clear_finished_tasks():
-    """Chỉ xóa task hoàn thành của user hiện tại"""
-    global spam_tasks, nhaytag_tasks
-    
-    load_tasks()
-    
-    try:
-        finished = ['done', 'error', 'stopped']
+        load_tasks()
+        cleanup_dead_tasks()
+        
+        all_tasks = []
         username = session.get('username', 'default')
-        to_remove = []
         
         for tid, task in spam_tasks.items():
-            if task.get('username') == username and task.get('status') in finished:
-                to_remove.append(('spam', tid))
+            if task.get('username') != username:
+                continue
+                
+            thread = task.get('thread')
+            if task.get('status') == 'running' and thread and not thread.is_alive():
+                task['status'] = 'error'
+                task['finished_at'] = datetime.now().isoformat()
+                save_tasks()
+            
+            all_tasks.append({
+                'id': tid,
+                'type': 'treongon',
+                'box_name': task.get('box_name', ''),
+                'total': task.get('total', 0),
+                'sent': task.get('sent', 0),
+                'delay': task.get('delay', 0),
+                'progress': task.get('progress', 0),
+                'status': task.get('status', 'unknown'),
+                'error': task.get('error', None),
+                'finished_at': task.get('finished_at', None),
+                'tag_text': task.get('tag_text', ''),
+                'member_count': 0
+            })
         
         for tid, task in nhaytag_tasks.items():
-            if task.get('username') == username and task.get('status') in finished:
-                to_remove.append(('nhaytag', tid))
-        
-        for type_, tid in to_remove:
-            if type_ == 'spam':
-                del spam_tasks[tid]
-            else:
-                del nhaytag_tasks[tid]
-        
-        save_tasks()
-        return jsonify({'success': True, 'message': f'Đã xóa {len(to_remove)} task của bạn'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/get_all_tasks', methods=['GET'])
-def get_all_tasks():
-    """Lấy tasks của user hiện tại"""
-    global spam_tasks, nhaytag_tasks
-    
-    load_tasks()
-    cleanup_dead_tasks()
-    
-    all_tasks = []
-    username = session.get('username', 'default')
-    
-    for tid, task in spam_tasks.items():
-        # Chỉ lấy task của user hiện tại
-        if task.get('username') != username:
-            continue
+            if task.get('username') != username:
+                continue
+                
+            thread = task.get('thread')
+            if task.get('status') == 'running' and thread and not thread.is_alive():
+                task['status'] = 'error'
+                task['finished_at'] = datetime.now().isoformat()
+                save_tasks()
             
-        thread = task.get('thread')
-        if task.get('status') == 'running' and thread and not thread.is_alive():
-            task['status'] = 'error'
-            task['finished_at'] = datetime.now().isoformat()
-            save_tasks()
+            all_tasks.append({
+                'id': tid,
+                'type': 'nhaytag',
+                'box_name': task.get('box_name', ''),
+                'total': 0,
+                'sent': 0,
+                'delay': task.get('delay', 0),
+                'progress': 50,
+                'status': task.get('status', 'unknown'),
+                'error': task.get('error', None),
+                'finished_at': task.get('finished_at', None),
+                'tag_text': '',
+                'member_count': task.get('member_count', 0)
+            })
         
-        all_tasks.append({
-            'id': tid,
-            'type': 'treongon',
-            'box_name': task.get('box_name', ''),
-            'total': task.get('total', 0),
-            'sent': task.get('sent', 0),
-            'delay': task.get('delay', 0),
-            'progress': task.get('progress', 0),
-            'status': task.get('status', 'unknown'),
-            'error': task.get('error', None),
-            'finished_at': task.get('finished_at', None),
-            'tag_text': task.get('tag_text', ''),
-            'member_count': 0
-        })
-    
-    for tid, task in nhaytag_tasks.items():
-        # Chỉ lấy task của user hiện tại
-        if task.get('username') != username:
-            continue
-            
-        thread = task.get('thread')
-        if task.get('status') == 'running' and thread and not thread.is_alive():
-            task['status'] = 'error'
-            task['finished_at'] = datetime.now().isoformat()
-            save_tasks()
+        all_tasks.sort(key=lambda x: (
+            0 if x['status'] == 'running' else 1,
+            x.get('finished_at', '') or ''
+        ))
         
-        all_tasks.append({
-            'id': tid,
-            'type': 'nhaytag',
-            'box_name': task.get('box_name', ''),
-            'total': 0,
-            'sent': 0,
-            'delay': task.get('delay', 0),
-            'progress': 50,
-            'status': task.get('status', 'unknown'),
-            'error': task.get('error', None),
-            'finished_at': task.get('finished_at', None),
-            'tag_text': '',
-            'member_count': task.get('member_count', 0)
-        })
-    
-    all_tasks.sort(key=lambda x: (
-        0 if x['status'] == 'running' else 1,
-        x.get('finished_at', '') or ''
-    ))
-    
-    return jsonify({'tasks': all_tasks})
+        return jsonify({'tasks': all_tasks})
 
-if __name__ == '__main__':
+    if __name__ == '__main__':
+        print("=" * 60)
+        print("🚀 WEB PNDK TOOL ĐA APP")
+        print("📱 https://pndk-tool.onrender.com")
+        print("🔐 Đăng nhập để sử dụng")
+        print("=" * 60)
+        app.run(debug=True, host='0.0.0.0', port=10000, threaded=True)
+
+except Exception as e:
     print("=" * 60)
-    print("🚀 WEB PNDK TOOL ĐA APP")
-    print("📱 https://pndk-tool.onrender.com")
-    print("🔐 Đăng nhập để sử dụng")
+    print("❌ LỖI CHI TIẾT:")
     print("=" * 60)
-    app.run(debug=True, host='0.0.0.0', port=10000, threaded=True)
+    traceback.print_exc()
+    print("=" * 60)
+    sys.exit(1)
