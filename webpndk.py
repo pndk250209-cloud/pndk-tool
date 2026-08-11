@@ -1159,7 +1159,7 @@ LOGIN_TEMPLATE = """
         }
     </script>
 
-    <!-- ===== FLOATING MUSIC PLAYER - RANDOM PLAYLIST ===== -->
+    <!-- ===== FLOATING MUSIC PLAYER - FIXED ===== -->
     <style>
         #musicPlayer {
             position: fixed;
@@ -1178,7 +1178,7 @@ LOGIN_TEMPLATE = """
             box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
             transition: all 0.3s ease;
             font-family: 'Segoe UI', sans-serif;
-            max-width: 300px;
+            max-width: 320px;
         }
         #musicPlayer:hover {
             background: rgba(0, 0, 0, 0.85);
@@ -1330,41 +1330,40 @@ LOGIN_TEMPLATE = """
         <button id="nextBtn" title="Bài tiếp theo">
             <i class="fas fa-step-forward"></i>
         </button>
-        <audio id="bgMusic" loop preload="auto"></audio>
+        <audio id="bgMusic" preload="auto"></audio>
     </div>
 
     <script>
         (function() {
-            // ===== DANH SÁCH NHẠC =====
+            // ===== DANH SÁCH NHẠC (Dùng MP3 - Không bị chặn autoplay) =====
             const PLAYLIST = [
                 { 
-                    id: 'a0MNrpNvyW0', 
+                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
                     name: 'Anh Sẽ Đón Em', 
                     artist: 'Nguyên ft. Trang (Cukak Remix)' 
                 },
                 { 
-                    id: 'Zx-oyNNDA6w', 
+                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
                     name: 'Bài hát 2', 
                     artist: 'Nghệ sĩ 2' 
                 },
                 { 
-                    id: 'QOLn6-qAI2I', 
+                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
                     name: 'Bài hát 3', 
                     artist: 'Nghệ sĩ 3' 
                 },
                 { 
-                    id: '69fjESqvaLM', 
+                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
                     name: 'Bài hát 4', 
                     artist: 'Nghệ sĩ 4' 
                 },
                 { 
-                    id: '38HBleFX03w', 
+                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
                     name: 'Bài hát 5', 
                     artist: 'Nghệ sĩ 5' 
                 }
             ];
 
-            // ===== CẤU HÌNH =====
             const audio = document.getElementById('bgMusic');
             const playBtn = document.getElementById('playBtn');
             const nextBtn = document.getElementById('nextBtn');
@@ -1373,58 +1372,46 @@ LOGIN_TEMPLATE = """
             const songArtist = document.getElementById('songArtist');
 
             let currentIndex = 0;
+            let isUserInteracted = false;
 
-            // ===== HÀM LẤY BÀI HÁT NGẪU NHIÊN =====
             function getRandomSong() {
                 return Math.floor(Math.random() * PLAYLIST.length);
             }
 
-            // ===== HÀM PHÁT BÀI HÁT =====
             function playSong(index) {
                 const song = PLAYLIST[index];
                 if (!song) return;
                 
-                // Cập nhật thông tin
                 songName.textContent = `🎵 ${song.name}`;
                 songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
                 
-                // Tạo URL YouTube không hình ảnh (chỉ lấy audio)
-                const videoUrl = `https://www.youtube.com/embed/${song.id}?autoplay=1&loop=0&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&autohide=1&start=0`;
+                audio.src = song.url;
+                audio.load();
                 
-                // Cách 1: Dùng iframe ẩn để lấy audio (tối ưu nhất)
-                // Xóa iframe cũ nếu có
-                const oldIframe = document.getElementById('youtubeAudioPlayer');
-                if (oldIframe) oldIframe.remove();
+                // Thử phát tự động
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        isUserInteracted = true;
+                    }).catch(() => {
+                        // Bị chặn autoplay -> hiển thị nút Play
+                        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">🔊 Nhấn Play để nghe</span>`;
+                    });
+                }
                 
-                // Tạo iframe mới
-                const iframe = document.createElement('iframe');
-                iframe.id = 'youtubeAudioPlayer';
-                iframe.src = videoUrl;
-                iframe.style.cssText = 'position:absolute; top:-9999px; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;';
-                iframe.allow = 'autoplay; encrypted-media';
-                document.body.appendChild(iframe);
-                
-                // Cập nhật nút Play
-                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                
-                // Lưu index hiện tại
                 currentIndex = index;
-                
-                // Lưu vào localStorage để nhớ bài đang phát
                 try {
                     localStorage.setItem('currentSongIndex', index);
                 } catch(e) {}
             }
 
-            // ===== HÀM PHÁT BÀI NGẪU NHIÊN =====
             function playRandomSong() {
-                const randomIndex = getRandomSong();
-                playSong(randomIndex);
+                playSong(getRandomSong());
             }
 
-            // ===== HÀM CHUYỂN BÀI TIẾP THEO =====
             function nextSong() {
-                // Chọn bài ngẫu nhiên khác bài hiện tại
                 let newIndex;
                 do {
                     newIndex = getRandomSong();
@@ -1432,34 +1419,41 @@ LOGIN_TEMPLATE = """
                 playSong(newIndex);
             }
 
-            // ===== ĐIỀU KHIỂN PLAY/PAUSE =====
-            function togglePlay() {
-                const iframe = document.getElementById('youtubeAudioPlayer');
-                if (!iframe) {
-                    playRandomSong();
-                    return;
-                }
-                
-                // Gửi lệnh pause/play qua postMessage (cách đơn giản là reload iframe)
-                // Cách thực tế: dùng Youtube Player API, nhưng để đơn giản, ta reload lại iframe
-                const isPlaying = playBtn.innerHTML.includes('pause');
-                if (isPlaying) {
-                    // Tạm dừng bằng cách reload iframe với autoplay=0
-                    const src = iframe.src.replace('autoplay=1', 'autoplay=0');
-                    iframe.src = src;
-                    playBtn.innerHTML = '<i class="fas fa-play"></i>';
-                    songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
+            // ===== ĐIỀU KHIỂN =====
+            volumeSlider.addEventListener('input', function() {
+                audio.volume = parseFloat(this.value);
+                localStorage.setItem('musicVolume', audio.volume);
+            });
+
+            playBtn.addEventListener('click', function() {
+                if (audio.paused) {
+                    audio.play().then(() => {
+                        this.innerHTML = '<i class="fas fa-pause"></i>';
+                        const song = PLAYLIST[currentIndex];
+                        if (song) {
+                            songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                        }
+                        isUserInteracted = true;
+                    }).catch(e => console.warn('Lỗi phát nhạc:', e));
                 } else {
-                    // Phát lại
-                    const src = iframe.src.replace('autoplay=0', 'autoplay=1');
-                    iframe.src = src;
-                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                    const song = PLAYLIST[currentIndex];
-                    if (song) {
-                        songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
-                    }
+                    audio.pause();
+                    this.innerHTML = '<i class="fas fa-play"></i>';
+                    songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
                 }
-            }
+            });
+
+            nextBtn.addEventListener('click', function() {
+                nextSong();
+                // Nếu đang paused thì tự động play
+                if (audio.paused) {
+                    audio.play().catch(() => {});
+                }
+            });
+
+            // Tự động chuyển bài khi kết thúc
+            audio.addEventListener('ended', function() {
+                nextSong();
+            });
 
             // ===== KHỞI TẠO =====
             function init() {
@@ -1481,20 +1475,6 @@ LOGIN_TEMPLATE = """
                     playRandomSong();
                 }
                 
-                // Âm lượng
-                audio.volume = parseFloat(volumeSlider.value);
-                
-                // Sự kiện
-                volumeSlider.addEventListener('input', function() {
-                    audio.volume = parseFloat(this.value);
-                    localStorage.setItem('musicVolume', audio.volume);
-                });
-                
-                playBtn.addEventListener('click', togglePlay);
-                nextBtn.addEventListener('click', function() {
-                    nextSong();
-                });
-                
                 // Khôi phục âm lượng
                 const savedVolume = localStorage.getItem('musicVolume');
                 if (savedVolume !== null) {
@@ -1504,28 +1484,14 @@ LOGIN_TEMPLATE = """
                         volumeSlider.value = vol;
                     }
                 }
-                
-                // Nếu phát lâu hơn 5 phút, tự động chuyển bài
-                let playStartTime = Date.now();
-                setInterval(() => {
-                    const iframe = document.getElementById('youtubeAudioPlayer');
-                    if (iframe && iframe.src.includes('autoplay=1')) {
-                        const elapsed = (Date.now() - playStartTime) / 1000;
-                        if (elapsed > 300) { // 5 phút
-                            nextSong();
-                            playStartTime = Date.now();
-                        }
-                    } else {
-                        playStartTime = Date.now();
-                    }
-                }, 10000);
             }
 
-            // ===== CHẠY KHI TRANG LOAD XONG =====
             if (document.readyState === 'complete') {
-                init();
+                setTimeout(init, 500);
             } else {
-                window.addEventListener('load', init);
+                window.addEventListener('load', function() {
+                    setTimeout(init, 500);
+                });
             }
         })();
     </script>
@@ -3296,7 +3262,7 @@ HTML_TEMPLATE = """
         };
     </script>
 
-    <!-- ===== FLOATING MUSIC PLAYER - RANDOM PLAYLIST ===== -->
+    <!-- ===== FLOATING MUSIC PLAYER - FIXED ===== -->
     <style>
         #musicPlayer {
             position: fixed;
@@ -3315,7 +3281,7 @@ HTML_TEMPLATE = """
             box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
             transition: all 0.3s ease;
             font-family: 'Segoe UI', sans-serif;
-            max-width: 300px;
+            max-width: 320px;
         }
         #musicPlayer:hover {
             background: rgba(0, 0, 0, 0.85);
@@ -3467,41 +3433,40 @@ HTML_TEMPLATE = """
         <button id="nextBtn" title="Bài tiếp theo">
             <i class="fas fa-step-forward"></i>
         </button>
-        <audio id="bgMusic" loop preload="auto"></audio>
+        <audio id="bgMusic" preload="auto"></audio>
     </div>
 
     <script>
         (function() {
-            // ===== DANH SÁCH NHẠC =====
+            // ===== DANH SÁCH NHẠC (Dùng MP3 - Không bị chặn autoplay) =====
             const PLAYLIST = [
                 { 
-                    id: 'a0MNrpNvyW0', 
+                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
                     name: 'Anh Sẽ Đón Em', 
                     artist: 'Nguyên ft. Trang (Cukak Remix)' 
                 },
                 { 
-                    id: 'Zx-oyNNDA6w', 
+                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
                     name: 'Bài hát 2', 
                     artist: 'Nghệ sĩ 2' 
                 },
                 { 
-                    id: 'QOLn6-qAI2I', 
+                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
                     name: 'Bài hát 3', 
                     artist: 'Nghệ sĩ 3' 
                 },
                 { 
-                    id: '69fjESqvaLM', 
+                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
                     name: 'Bài hát 4', 
                     artist: 'Nghệ sĩ 4' 
                 },
                 { 
-                    id: '38HBleFX03w', 
+                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
                     name: 'Bài hát 5', 
                     artist: 'Nghệ sĩ 5' 
                 }
             ];
 
-            // ===== CẤU HÌNH =====
             const audio = document.getElementById('bgMusic');
             const playBtn = document.getElementById('playBtn');
             const nextBtn = document.getElementById('nextBtn');
@@ -3510,55 +3475,45 @@ HTML_TEMPLATE = """
             const songArtist = document.getElementById('songArtist');
 
             let currentIndex = 0;
+            let isUserInteracted = false;
 
-            // ===== HÀM LẤY BÀI HÁT NGẪU NHIÊN =====
             function getRandomSong() {
                 return Math.floor(Math.random() * PLAYLIST.length);
             }
 
-            // ===== HÀM PHÁT BÀI HÁT =====
             function playSong(index) {
                 const song = PLAYLIST[index];
                 if (!song) return;
                 
-                // Cập nhật thông tin
                 songName.textContent = `🎵 ${song.name}`;
                 songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
                 
-                // Tạo URL YouTube không hình ảnh (chỉ lấy audio)
-                const videoUrl = `https://www.youtube.com/embed/${song.id}?autoplay=1&loop=0&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&autohide=1&start=0`;
+                audio.src = song.url;
+                audio.load();
                 
-                // Xóa iframe cũ nếu có
-                const oldIframe = document.getElementById('youtubeAudioPlayer');
-                if (oldIframe) oldIframe.remove();
+                // Thử phát tự động
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        isUserInteracted = true;
+                    }).catch(() => {
+                        // Bị chặn autoplay -> hiển thị nút Play
+                        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">🔊 Nhấn Play để nghe</span>`;
+                    });
+                }
                 
-                // Tạo iframe mới
-                const iframe = document.createElement('iframe');
-                iframe.id = 'youtubeAudioPlayer';
-                iframe.src = videoUrl;
-                iframe.style.cssText = 'position:absolute; top:-9999px; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;';
-                iframe.allow = 'autoplay; encrypted-media';
-                document.body.appendChild(iframe);
-                
-                // Cập nhật nút Play
-                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                
-                // Lưu index hiện tại
                 currentIndex = index;
-                
-                // Lưu vào localStorage để nhớ bài đang phát
                 try {
                     localStorage.setItem('currentSongIndex', index);
                 } catch(e) {}
             }
 
-            // ===== HÀM PHÁT BÀI NGẪU NHIÊN =====
             function playRandomSong() {
-                const randomIndex = getRandomSong();
-                playSong(randomIndex);
+                playSong(getRandomSong());
             }
 
-            // ===== HÀM CHUYỂN BÀI TIẾP THEO =====
             function nextSong() {
                 let newIndex;
                 do {
@@ -3567,32 +3522,41 @@ HTML_TEMPLATE = """
                 playSong(newIndex);
             }
 
-            // ===== ĐIỀU KHIỂN PLAY/PAUSE =====
-            function togglePlay() {
-                const iframe = document.getElementById('youtubeAudioPlayer');
-                if (!iframe) {
-                    playRandomSong();
-                    return;
-                }
-                
-                const isPlaying = playBtn.innerHTML.includes('pause');
-                if (isPlaying) {
-                    // Tạm dừng bằng cách reload iframe với autoplay=0
-                    const src = iframe.src.replace('autoplay=1', 'autoplay=0');
-                    iframe.src = src;
-                    playBtn.innerHTML = '<i class="fas fa-play"></i>';
-                    songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
+            // ===== ĐIỀU KHIỂN =====
+            volumeSlider.addEventListener('input', function() {
+                audio.volume = parseFloat(this.value);
+                localStorage.setItem('musicVolume', audio.volume);
+            });
+
+            playBtn.addEventListener('click', function() {
+                if (audio.paused) {
+                    audio.play().then(() => {
+                        this.innerHTML = '<i class="fas fa-pause"></i>';
+                        const song = PLAYLIST[currentIndex];
+                        if (song) {
+                            songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                        }
+                        isUserInteracted = true;
+                    }).catch(e => console.warn('Lỗi phát nhạc:', e));
                 } else {
-                    // Phát lại
-                    const src = iframe.src.replace('autoplay=0', 'autoplay=1');
-                    iframe.src = src;
-                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                    const song = PLAYLIST[currentIndex];
-                    if (song) {
-                        songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
-                    }
+                    audio.pause();
+                    this.innerHTML = '<i class="fas fa-play"></i>';
+                    songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
                 }
-            }
+            });
+
+            nextBtn.addEventListener('click', function() {
+                nextSong();
+                // Nếu đang paused thì tự động play
+                if (audio.paused) {
+                    audio.play().catch(() => {});
+                }
+            });
+
+            // Tự động chuyển bài khi kết thúc
+            audio.addEventListener('ended', function() {
+                nextSong();
+            });
 
             // ===== KHỞI TẠO =====
             function init() {
@@ -3614,20 +3578,6 @@ HTML_TEMPLATE = """
                     playRandomSong();
                 }
                 
-                // Âm lượng
-                audio.volume = parseFloat(volumeSlider.value);
-                
-                // Sự kiện
-                volumeSlider.addEventListener('input', function() {
-                    audio.volume = parseFloat(this.value);
-                    localStorage.setItem('musicVolume', audio.volume);
-                });
-                
-                playBtn.addEventListener('click', togglePlay);
-                nextBtn.addEventListener('click', function() {
-                    nextSong();
-                });
-                
                 // Khôi phục âm lượng
                 const savedVolume = localStorage.getItem('musicVolume');
                 if (savedVolume !== null) {
@@ -3637,28 +3587,14 @@ HTML_TEMPLATE = """
                         volumeSlider.value = vol;
                     }
                 }
-                
-                // Tự động chuyển bài sau 5 phút
-                let playStartTime = Date.now();
-                setInterval(() => {
-                    const iframe = document.getElementById('youtubeAudioPlayer');
-                    if (iframe && iframe.src.includes('autoplay=1')) {
-                        const elapsed = (Date.now() - playStartTime) / 1000;
-                        if (elapsed > 300) {
-                            nextSong();
-                            playStartTime = Date.now();
-                        }
-                    } else {
-                        playStartTime = Date.now();
-                    }
-                }, 10000);
             }
 
-            // ===== CHẠY KHI TRANG LOAD XONG =====
             if (document.readyState === 'complete') {
-                init();
+                setTimeout(init, 500);
             } else {
-                window.addEventListener('load', init);
+                window.addEventListener('load', function() {
+                    setTimeout(init, 500);
+                });
             }
         })();
     </script>
@@ -4329,6 +4265,6 @@ if __name__ == '__main__':
     print("🚀 WEB PNDK TOOL ĐA APP")
     print("📱 http://localhost:5000")
     print("🔐 Đăng nhập để sử dụng")
-    print("🎵 Nhạc nền random từ playlist của bạn")
+    print("🎵 Nhạc nền random (đã fix lỗi autoplay)")
     print("=" * 60)
     app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
