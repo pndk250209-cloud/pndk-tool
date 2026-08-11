@@ -1,6 +1,6 @@
-# requirements.txt
 Flask==2.3.2
-selenium==4.15.0
-webdriver-manager==4.0.1
-Flask==2.3.2
+gunicorn==21.2.0
 zlapi
+requests
+asyncio
+python-dotenv
