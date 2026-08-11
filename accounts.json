@@ -1,0 +1,26 @@
+[
+  {
+    "id": "c7caace5",
+    "name": "Ngoc Anh",
+    "cookies": "{\"_ga_YS1V643LGV\":\"GS2.1.s1784960026$o1$g0$t1784960031$j55$l0$h0\",\"_zlang\":\"vn\",\"_ga\":\"GA1.2.1417639088.1784960026\",\"_gid\":\"GA1.2.684374433.1784960041\",\"_gat\":\"1\",\"_ga_3EM8ZPYYN3\":\"GS2.2.s1784960040$o1$g0$t1784960040$j60$l0$h0\",\"zpsid\":\"xceA.451901485.3.gtW6re-5qi-Y_JtLWuNIp_hseFkwjEl_lh7g-ewnQYraEvH3Zhw6g-M5qiy\",\"zpw_sek\":\"S_8B.451901485.a0.ryZFvzuuHnHTJS9vKJKjOmiNI0XI3mz8H4KOD5zzNYqNKKC08r5L3nvwP08721113JGPsvBUaoNyD10t55yjOm\",\"__zi\":\"3000.SSZzejyD6zOgdh2mtnLQWYQN_RAG01ICFjIXe9fEM8WxcEIadajPZNQTwwdMGrY5SfBjgJ0m.1\",\"__zi-legacy\":\"3000.SSZzejyD6zOgdh2mtnLQWYQN_RAG01ICFjIXe9fEM8WxcEIadajPZNQTwwdMGrY5SfBjgJ0m.1\",\"app.event.zalo.me\":\"1277909035835621429\"}",
+    "imei": "e2a76af5-2b9a-424d-8847-9064a2abcf4b-c33c588009b95570bda142ca18d363d2",
+    "note": "",
+    "created_at": "2026-08-10T21:59:42.161760",
+    "last_used": "2026-08-11T00:02:53.674255",
+    "status": "active",
+    "login_success": true,
+    "box_count": 16
+  },
+  {
+    "id": "17d627cb",
+    "name": "Ly",
+    "cookies": "{\"_ga_YS1V643LGV\":\"GS2.1.s1784985803$o1$g0$t1784985808$j55$l0$h0\",\"_zlang\":\"vn\",\"_ga\":\"GA1.2.1172888302.1784985804\",\"_gid\":\"GA1.2.1191764399.1784985853\",\"_ga_3EM8ZPYYN3\":\"GS2.2.s1784985853$o1$g0$t1784985853$j60$l0$h0\",\"zpsid\":\"tImo.453878179.4.jYIRf7FrBh_GL2EaV_KklmQ6N8j6nXQ8IyGPXdB1bbsOIsWpSlgNsndrBhy\",\"zpw_sek\":\"kWin.453878179.a0.ItZsvWnT-QcFA7p43ObntrUh5BGEirEUIDi3cbhCHUeLvaRdQU46gb_VDOTBj4pzKOX5PyvYpvcWY61cIEDntm\",\"__zi\":\"3000.SSZzejyD6zOgdh2mtnLQWYQN_RAG01ICFjIXe9fEM8WxckMZbqnNXd-QvQBVH5YBSvJie3Wv.1\",\"__zi-legacy\":\"3000.SSZzejyD6zOgdh2mtnLQWYQN_RAG01ICFjIXe9fEM8WxckMZbqnNXd-QvQBVH5YBSvJie3Wv.1\",\"app.event.zalo.me\":\"2235760260723553678\"}",
+    "imei": "9536d991-2881-4499-8bed-dd7bc3a3fd0b-c33c588009b95570bda142ca18d363d2",
+    "note": "",
+    "created_at": "2026-08-10T22:35:08.964550",
+    "last_used": "2026-08-10T22:44:14.683621",
+    "status": "active",
+    "login_success": true,
+    "box_count": 8
+  }
+]
