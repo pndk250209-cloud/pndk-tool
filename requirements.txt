@@ -3,3 +3,5 @@ gunicorn==21.2.0
 zlapi
 requests
 python-dotenv
+paho-mqtt
+pycryptodome
