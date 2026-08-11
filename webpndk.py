@@ -3232,7 +3232,7 @@ def get_all_tasks():
 if __name__ == '__main__':
     print("=" * 60)
     print("🚀 WEB PNDK TOOL ĐA APP")
-    print("📱 http://localhost:5000")
+    print("📱 https://pndk-tool.onrender.com")
     print("🔐 Đăng nhập để sử dụng")
     print("=" * 60)
-    app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
+    app.run(debug=True, host='0.0.0.0', port=10000, threaded=True)
