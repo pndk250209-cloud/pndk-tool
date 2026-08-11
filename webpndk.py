@@ -342,7 +342,7 @@ LOGIN_TEMPLATE = """
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            background: #0a0a1a;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -351,110 +351,306 @@ LOGIN_TEMPLATE = """
             position: relative;
             overflow: hidden;
         }
-        
-        body::before {
-            content: '';
+
+        /* ===== BACKGROUND 3D ANIMATION ===== */
+        .bg-3d {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 25%, #16213e 50%, #0a0a1a 75%, #1a0a2e 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease-in-out infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 0%; }
+            25% { background-position: 100% 0%; }
+            50% { background-position: 100% 100%; }
+            75% { background-position: 0% 100%; }
+            100% { background-position: 0% 0%; }
+        }
+
+        /* ===== WAVES ===== */
+        .waves {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .wave {
             position: absolute;
-            width: 200%;
-            height: 200%;
-            top: -50%;
+            bottom: -10px;
             left: -50%;
-            background: radial-gradient(ellipse at 30% 50%, rgba(102, 126, 234, 0.15), transparent 60%),
-                        radial-gradient(ellipse at 70% 50%, rgba(118, 75, 162, 0.15), transparent 60%);
-            animation: rotateBg 20s linear infinite;
+            width: 200%;
+            height: 200px;
+            background: radial-gradient(ellipse at center, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: waveMove 8s ease-in-out infinite;
         }
-        
-        @keyframes rotateBg {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        .wave:nth-child(1) {
+            animation-delay: 0s;
+            background: radial-gradient(ellipse at center, rgba(102, 126, 234, 0.12) 0%, transparent 70%);
         }
-        
-        .particles {
-            position: absolute;
+        .wave:nth-child(2) {
+            animation-delay: -2s;
+            background: radial-gradient(ellipse at center, rgba(118, 75, 162, 0.12) 0%, transparent 70%);
+            height: 150px;
+            bottom: -5px;
+        }
+        .wave:nth-child(3) {
+            animation-delay: -4s;
+            background: radial-gradient(ellipse at center, rgba(102, 126, 234, 0.08) 0%, transparent 70%);
+            height: 100px;
+            bottom: 0px;
+        }
+
+        @keyframes waveMove {
+            0%, 100% { transform: translateX(0) scale(1); }
+            25% { transform: translateX(5%) scale(1.1); }
+            50% { transform: translateX(0) scale(1.2); }
+            75% { transform: translateX(-5%) scale(1.1); }
+        }
+
+        /* ===== FLOATING ORBS ===== */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            z-index: 0;
+            animation: orbFloat 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            top: -100px;
+            right: -100px;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.3), transparent);
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            bottom: -50px;
+            left: -50px;
+            background: radial-gradient(circle, rgba(118, 75, 162, 0.3), transparent);
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 200px;
+            height: 200px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent);
+            animation-delay: -10s;
+            filter: blur(120px);
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -20px) scale(1.1); }
+            50% { transform: translate(-20px, 30px) scale(0.9); }
+            75% { transform: translate(20px, 20px) scale(1.05); }
+        }
+
+        /* ===== PARTICLES ===== */
+        .particles-container {
+            position: fixed;
             width: 100%;
             height: 100%;
             top: 0;
             left: 0;
+            z-index: 0;
             pointer-events: none;
             overflow: hidden;
         }
-        
+
         .particle {
             position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
             border-radius: 50%;
-            background: rgba(255,255,255,0.05);
-            animation: floatParticle linear infinite;
+            opacity: 0;
+            animation: particleFloat linear infinite;
         }
-        
-        @keyframes floatParticle {
-            0% { transform: translateY(100vh) scale(0); opacity: 0; }
-            10% { opacity: 0.5; }
-            90% { opacity: 0.5; }
-            100% { transform: translateY(-100vh) scale(1); opacity: 0; }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-10vh) scale(1);
+                opacity: 0;
+            }
         }
-        
+
+        /* ===== GLOWING RING ===== */
+        .glow-ring {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(102, 126, 234, 0.05);
+            z-index: 0;
+            animation: ringRotate 30s linear infinite;
+        }
+
+        .glow-ring::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            width: 2px;
+            height: 20px;
+            background: linear-gradient(to bottom, rgba(102, 126, 234, 0.5), transparent);
+            transform: translateX(-50%);
+            border-radius: 2px;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+
+        @keyframes ringRotate {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .glow-ring-2 {
+            width: 450px;
+            height: 450px;
+            animation-duration: 20s;
+            animation-direction: reverse;
+            border-color: rgba(118, 75, 162, 0.03);
+        }
+
+        .glow-ring-2::before {
+            background: linear-gradient(to bottom, rgba(118, 75, 162, 0.5), transparent);
+            box-shadow: 0 0 20px rgba(118, 75, 162, 0.3);
+        }
+
+        /* ===== LOGIN CARD ===== */
         .login-card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(30px);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 30px;
-            padding: 45px 40px;
-            max-width: 440px;
+            padding: 50px 45px;
+            max-width: 450px;
             width: 100%;
-            box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+            box-shadow: 
+                0 30px 80px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
             position: relative;
             z-index: 1;
             animation: slideUp 0.8s ease-out;
+            transition: all 0.3s;
         }
-        
+
+        .login-card:hover {
+            box-shadow: 
+                0 40px 100px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
         @keyframes slideUp {
-            0% { transform: translateY(50px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
+            0% { transform: translateY(50px) scale(0.95); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
         }
-        
+
         .login-card .logo {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 35px;
         }
-        
+
         .login-card .logo .logo-icon {
-            width: 80px;
-            height: 80px;
+            width: 85px;
+            height: 85px;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 20px;
+            border-radius: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 15px;
-            font-size: 40px;
+            margin: 0 auto 18px;
+            font-size: 42px;
             color: white;
-            box-shadow: 0 15px 40px rgba(102,126,234,0.3);
-            animation: pulseLogo 2s ease-in-out infinite;
+            box-shadow: 0 20px 50px rgba(102, 126, 234, 0.3);
+            animation: pulseLogo 2.5s ease-in-out infinite;
+            position: relative;
+            transition: all 0.3s;
         }
-        
+
+        .login-card .logo .logo-icon::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 27px;
+            background: linear-gradient(135deg, #667eea, #764ba2, #667eea);
+            background-size: 300% 300%;
+            z-index: -1;
+            opacity: 0.3;
+            animation: gradientRotate 3s ease-in-out infinite;
+            filter: blur(15px);
+        }
+
+        @keyframes gradientRotate {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
         @keyframes pulseLogo {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
         }
-        
+
         .login-card .logo h3 {
             font-family: 'Orbitron', monospace;
             font-weight: 900;
-            font-size: 24px;
-            background: linear-gradient(135deg, #fff, #a78bfa);
+            font-size: 26px;
+            background: linear-gradient(135deg, #fff, #a78bfa, #667eea);
+            background-size: 200% 200%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: none;
             margin: 0;
+            animation: textGradient 4s ease-in-out infinite;
         }
-        
-        .login-card .logo p {
-            color: rgba(255,255,255,0.5);
+
+        @keyframes textGradient {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .login-card .logo .subtitle {
+            color: rgba(255, 255, 255, 0.4);
             font-size: 13px;
-            letter-spacing: 2px;
-            margin-top: 5px;
+            letter-spacing: 3px;
+            margin-top: 8px;
+            text-transform: uppercase;
         }
-        
+
         .login-card .logo .status-dot {
             display: inline-block;
             width: 8px;
@@ -462,186 +658,319 @@ LOGIN_TEMPLATE = """
             border-radius: 50%;
             background: #28a745;
             animation: blink 1.5s ease-in-out infinite;
-            margin-right: 5px;
+            margin-right: 6px;
+            vertical-align: middle;
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
         }
-        
+
         @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
         }
-        
-        .login-card h5 {
-            color: rgba(255,255,255,0.8);
-            font-weight: 600;
-            margin-bottom: 20px;
+
+        .login-card .tab-header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        
-        .form-control {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 12px 16px;
-            color: #fff;
-            transition: all 0.3s;
-        }
-        
-        .form-control:focus {
-            background: rgba(255,255,255,0.08);
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
-            color: #fff;
-        }
-        
-        .form-control::placeholder {
-            color: rgba(255,255,255,0.3);
-        }
-        
-        .form-label {
-            color: rgba(255,255,255,0.6);
-            font-weight: 600;
-            font-size: 13px;
-        }
-        
-        .btn-login {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+
+        .login-card .tab-header .tab-btn {
+            flex: 1;
+            padding: 10px;
             border: none;
-            color: white;
-            padding: 14px;
-            border-radius: 12px;
-            font-weight: 700;
-            width: 100%;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn-login:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(102,126,234,0.4);
-            color: white;
-        }
-        
-        .btn-login:disabled {
-            opacity: 0.7;
-            transform: none;
-        }
-        
-        .btn-login::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1), transparent 70%);
-            opacity: 0;
-            transition: 0.5s;
-        }
-        
-        .btn-login:hover::after {
-            opacity: 1;
-        }
-        
-        .switch-link {
-            text-align: center;
-            margin-top: 20px;
-            color: rgba(255,255,255,0.5);
-        }
-        
-        .switch-link a {
-            color: #a78bfa;
-            text-decoration: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.4);
             font-weight: 600;
-            transition: 0.3s;
-        }
-        
-        .switch-link a:hover {
-            color: #fff;
-            text-decoration: underline;
-        }
-        
-        .alert {
+            font-size: 14px;
             border-radius: 12px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: rgba(255,255,255,0.8);
+            transition: all 0.3s;
+            cursor: pointer;
         }
-        
-        .alert-success {
-            border-color: rgba(40,167,69,0.3);
-            color: #28a745;
+
+        .login-card .tab-header .tab-btn:hover {
+            color: rgba(255, 255, 255, 0.7);
         }
-        
-        .alert-danger {
-            border-color: rgba(220,53,69,0.3);
-            color: #dc3545;
+
+        .login-card .tab-header .tab-btn.active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            color: #fff;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.1);
         }
-        
+
+        .login-card .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .login-card .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-control {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 13px 18px;
+            color: #fff;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            color: #fff;
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        .form-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
         .password-toggle {
             position: relative;
         }
-        
+
         .password-toggle .toggle-eye {
             position: absolute;
             right: 15px;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: rgba(255,255,255,0.4);
+            color: rgba(255, 255, 255, 0.25);
             transition: 0.3s;
+            z-index: 2;
         }
-        
+
         .password-toggle .toggle-eye:hover {
-            color: rgba(255,255,255,0.8);
+            color: rgba(255, 255, 255, 0.6);
         }
-        
-        .footer-text {
+
+        .btn-login {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 15px;
+            border-radius: 14px;
+            font-weight: 700;
+            width: 100%;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.35);
+            color: white;
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.7;
+            transform: none;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: 0.5s;
+        }
+
+        .btn-login:hover::before {
+            left: 100%;
+        }
+
+        .switch-link {
             text-align: center;
             margin-top: 20px;
-            color: rgba(255,255,255,0.2);
-            font-size: 12px;
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 14px;
+        }
+
+        .switch-link a {
+            color: #a78bfa;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .switch-link a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #a78bfa);
+            transition: 0.3s;
+        }
+
+        .switch-link a:hover {
+            color: #fff;
+        }
+
+        .switch-link a:hover::after {
+            width: 100%;
+        }
+
+        .alert {
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 16px;
+            font-size: 13px;
+        }
+
+        .alert-success {
+            border-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .alert-danger {
+            border-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 25px;
+            color: rgba(255, 255, 255, 0.12);
+            font-size: 11px;
             letter-spacing: 1px;
         }
-        
+
         .footer-text .heart {
             color: #ff4757;
             animation: heartBeat 1.5s ease-in-out infinite;
             display: inline-block;
         }
-        
+
         @keyframes heartBeat {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.2); }
         }
-        
+
         .spinner-border-sm {
             width: 1.2rem;
             height: 1.2rem;
             border-width: 0.15em;
         }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 30px 25px;
+                margin: 15px;
+                border-radius: 20px;
+            }
+
+            .login-card .logo .logo-icon {
+                width: 65px;
+                height: 65px;
+                font-size: 32px;
+            }
+
+            .login-card .logo h3 {
+                font-size: 20px;
+            }
+
+            .login-card .tab-header .tab-btn {
+                font-size: 12px;
+                padding: 8px;
+            }
+
+            .form-control {
+                padding: 11px 14px;
+                font-size: 13px;
+            }
+
+            .btn-login {
+                padding: 13px;
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="particles" id="particles"></div>
+    <!-- ===== BACKGROUND ===== -->
+    <div class="bg-3d"></div>
     
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="glow-ring"></div>
+    <div class="glow-ring glow-ring-2"></div>
+
+    <div class="waves">
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+    </div>
+
+    <div class="particles-container" id="particles"></div>
+
+    <!-- ===== LOGIN CARD ===== -->
     <div class="login-card">
         <div class="logo">
             <div class="logo-icon">
                 <i class="fas fa-robot"></i>
             </div>
-            <h3>WEB PNDK TOOL ĐA APP</h3>
-            <p><span class="status-dot"></span> Hệ thống tự động hóa Zalo</p>
+            <h3>WEB PNDK TOOL</h3>
+            <div class="subtitle">
+                <span class="status-dot"></span> Hệ thống tự động hóa Zalo
+            </div>
         </div>
-        
-        <div id="loginForm">
-            <h5><i class="fas fa-sign-in-alt"></i> Đăng nhập</h5>
+
+        <div class="tab-header">
+            <button class="tab-btn active" onclick="switchTab('login')" id="loginTab">
+                <i class="fas fa-sign-in-alt"></i> Đăng nhập
+            </button>
+            <button class="tab-btn" onclick="switchTab('register')" id="registerTab">
+                <i class="fas fa-user-plus"></i> Đăng ký
+            </button>
+        </div>
+
+        <!-- ===== LOGIN FORM ===== -->
+        <div class="tab-content active" id="loginForm">
             <form onsubmit="login(event)">
                 <div class="mb-3">
-                    <label class="form-label">Tên đăng nhập</label>
+                    <label class="form-label"><i class="fas fa-user"></i> Tên đăng nhập</label>
                     <input type="text" class="form-control" id="loginUsername" placeholder="Nhập tên đăng nhập" required>
                 </div>
                 <div class="mb-3 password-toggle">
-                    <label class="form-label">Mật khẩu</label>
+                    <label class="form-label"><i class="fas fa-lock"></i> Mật khẩu</label>
                     <input type="password" class="form-control" id="loginPassword" placeholder="Nhập mật khẩu" required>
                     <span class="toggle-eye" onclick="togglePassword('loginPassword', this)"><i class="fas fa-eye"></i></span>
                 </div>
@@ -650,25 +979,22 @@ LOGIN_TEMPLATE = """
                 </button>
             </form>
             <div id="loginStatus" class="mt-3"></div>
-            <div class="switch-link">
-                Chưa có tài khoản? <a href="#" onclick="showRegister()">Đăng ký ngay</a>
-            </div>
         </div>
-        
-        <div id="registerForm" style="display:none;">
-            <h5><i class="fas fa-user-plus"></i> Đăng ký</h5>
+
+        <!-- ===== REGISTER FORM ===== -->
+        <div class="tab-content" id="registerForm">
             <form onsubmit="register(event)">
                 <div class="mb-3">
-                    <label class="form-label">Tên đăng nhập</label>
+                    <label class="form-label"><i class="fas fa-user"></i> Tên đăng nhập</label>
                     <input type="text" class="form-control" id="registerUsername" placeholder="Chọn tên đăng nhập" required>
                 </div>
                 <div class="mb-3 password-toggle">
-                    <label class="form-label">Mật khẩu</label>
+                    <label class="form-label"><i class="fas fa-lock"></i> Mật khẩu</label>
                     <input type="password" class="form-control" id="registerPassword" placeholder="Nhập mật khẩu" required>
                     <span class="toggle-eye" onclick="togglePassword('registerPassword', this)"><i class="fas fa-eye"></i></span>
                 </div>
                 <div class="mb-3 password-toggle">
-                    <label class="form-label">Xác nhận mật khẩu</label>
+                    <label class="form-label"><i class="fas fa-check-circle"></i> Xác nhận mật khẩu</label>
                     <input type="password" class="form-control" id="registerPassword2" placeholder="Nhập lại mật khẩu" required>
                     <span class="toggle-eye" onclick="togglePassword('registerPassword2', this)"><i class="fas fa-eye"></i></span>
                 </div>
@@ -677,33 +1003,37 @@ LOGIN_TEMPLATE = """
                 </button>
             </form>
             <div id="registerStatus" class="mt-3"></div>
-            <div class="switch-link">
-                Đã có tài khoản? <a href="#" onclick="showLogin()">Đăng nhập</a>
-            </div>
         </div>
-        
+
         <div class="footer-text">
-            <span class="heart">❤️</span> Phát triển bởi Phan Nguyễn Đăng Khoa
+            <span class="heart">❤</span> Phát triển bởi Phan Nguyễn Đăng Khoa
         </div>
     </div>
 
     <script>
+        // ===== PARTICLES =====
         function createParticles() {
             const container = document.getElementById('particles');
-            for (let i = 0; i < 30; i++) {
+            const colors = ['#667eea', '#764ba2', '#a78bfa', '#ffffff', '#4facfe'];
+            
+            for (let i = 0; i < 50; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
-                const size = Math.random() * 6 + 2;
+                const size = Math.random() * 4 + 2;
+                const color = colors[Math.floor(Math.random() * colors.length)];
                 particle.style.width = size + 'px';
                 particle.style.height = size + 'px';
                 particle.style.left = Math.random() * 100 + '%';
-                particle.style.animationDuration = (Math.random() * 20 + 15) + 's';
+                particle.style.background = color;
+                particle.style.boxShadow = `0 0 ${size * 2}px ${color}`;
+                particle.style.animationDuration = (Math.random() * 15 + 10) + 's';
                 particle.style.animationDelay = (Math.random() * 20) + 's';
                 container.appendChild(particle);
             }
         }
         createParticles();
 
+        // ===== TOGGLE PASSWORD =====
         function togglePassword(inputId, eye) {
             const input = document.getElementById(inputId);
             if (input.type === 'password') {
@@ -715,16 +1045,27 @@ LOGIN_TEMPLATE = """
             }
         }
 
-        function showRegister() {
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('registerForm').style.display = 'block';
+        // ===== SWITCH TAB =====
+        function switchTab(tab) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+
+            if (tab === 'login') {
+                loginForm.classList.add('active');
+                registerForm.classList.remove('active');
+                loginTab.classList.add('active');
+                registerTab.classList.remove('active');
+            } else {
+                registerForm.classList.add('active');
+                loginForm.classList.remove('active');
+                registerTab.classList.add('active');
+                loginTab.classList.remove('active');
+            }
         }
 
-        function showLogin() {
-            document.getElementById('registerForm').style.display = 'none';
-            document.getElementById('loginForm').style.display = 'block';
-        }
-
+        // ===== LOGIN =====
         function login(e) {
             e.preventDefault();
             const username = document.getElementById('loginUsername').value.trim();
@@ -764,6 +1105,7 @@ LOGIN_TEMPLATE = """
             });
         }
 
+        // ===== REGISTER =====
         function register(e) {
             e.preventDefault();
             const username = document.getElementById('registerUsername').value.trim();
@@ -800,7 +1142,11 @@ LOGIN_TEMPLATE = """
                 btn.disabled = false;
                 if (data.success) {
                     status.innerHTML = '<div class="alert alert-success">✅ ' + data.message + '</div>';
-                    setTimeout(() => { showLogin(); }, 1500);
+                    setTimeout(() => { 
+                        switchTab('login');
+                        document.getElementById('loginUsername').value = username;
+                        status.innerHTML = '';
+                    }, 1500);
                 } else {
                     status.innerHTML = '<div class="alert alert-danger">❌ ' + data.message + '</div>';
                 }
