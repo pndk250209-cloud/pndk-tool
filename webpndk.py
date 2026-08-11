@@ -209,6 +209,8 @@ def cleanup_dead_tasks():
                 save_tasks()
     save_tasks()
 
+load_tasks()
+
 # ===== WORKER NHAY TAG =====
 def worker_nhaytag(imei: str, cookies: dict, group_id: str,
                    delay: float,
@@ -1519,37 +1521,25 @@ HTML_TEMPLATE = """
 </head>
 <body>
     <div class="container-custom">
+        <!-- HEADER -->
         <div class="header-main">
             <div class="content">
                 <div class="logo-area">
-                    <div class="logo-icon">
-                        <i class="fas fa-robot"></i>
-                    </div>
+                    <div class="logo-icon"><i class="fas fa-robot"></i></div>
                     <div>
                         <div class="brand-title">WEB PNDK TOOL ĐA APP</div>
-                        <div class="brand-sub">
-                            <span class="status-dot"></span>
-                            Hệ thống tự động hóa Zalo
-                        </div>
+                        <div class="brand-sub"><span class="status-dot"></span> Hệ thống tự động hóa Zalo</div>
                     </div>
                 </div>
                 <div class="header-info">
-                    <div class="info-badge">
-                        <i class="fas fa-user"></i>
-                        <span>Phan Nguyễn Đăng Khoa</span>
-                    </div>
-                    <div class="info-badge">
-                        <i class="fas fa-code"></i>
-                        <span>v3.0</span>
-                    </div>
-                    <div class="info-badge">
-                        <i class="fas fa-clock"></i>
-                        <span id="liveTime">Đang tải...</span>
-                    </div>
+                    <div class="info-badge"><i class="fas fa-user"></i><span>Phan Nguyễn Đăng Khoa</span></div>
+                    <div class="info-badge"><i class="fas fa-code"></i><span>v3.0</span></div>
+                    <div class="info-badge"><i class="fas fa-clock"></i><span id="liveTime">Đang tải...</span></div>
                 </div>
             </div>
         </div>
 
+        <!-- USER HEADER -->
         <div class="user-header">
             <div class="user-info">
                 <i class="fas fa-user-circle"></i>
@@ -1563,107 +1553,57 @@ HTML_TEMPLATE = """
             </div>
         </div>
 
+        <!-- STATS -->
         <div class="stats-grid">
-            <div class="stat-card">
-                <span class="stat-icon"><i class="fas fa-users"></i></span>
-                <div class="stat-number" id="accCount">0</div>
-                <div class="stat-label">Tài khoản Zalo</div>
-            </div>
-            <div class="stat-card">
-                <span class="stat-icon"><i class="fas fa-check-circle"></i></span>
-                <div class="stat-number" id="activeCount">0</div>
-                <div class="stat-label">Đang hoạt động</div>
-            </div>
-            <div class="stat-card">
-                <span class="stat-icon"><i class="fas fa-tasks"></i></span>
-                <div class="stat-number" id="taskCount">0</div>
-                <div class="stat-label">Tổng Tasks</div>
-            </div>
-            <div class="stat-card">
-                <span class="stat-icon"><i class="fas fa-play-circle"></i></span>
-                <div class="stat-number" id="runningCount">0</div>
-                <div class="stat-label">Đang chạy</div>
-            </div>
+            <div class="stat-card"><span class="stat-icon"><i class="fas fa-users"></i></span><div class="stat-number" id="accCount">0</div><div class="stat-label">Tài khoản Zalo</div></div>
+            <div class="stat-card"><span class="stat-icon"><i class="fas fa-check-circle"></i></span><div class="stat-number" id="activeCount">0</div><div class="stat-label">Đang hoạt động</div></div>
+            <div class="stat-card"><span class="stat-icon"><i class="fas fa-tasks"></i></span><div class="stat-number" id="taskCount">0</div><div class="stat-label">Tổng Tasks</div></div>
+            <div class="stat-card"><span class="stat-icon"><i class="fas fa-play-circle"></i></span><div class="stat-number" id="runningCount">0</div><div class="stat-label">Đang chạy</div></div>
         </div>
 
+        <!-- MAIN CARD -->
         <div class="main-card">
             <div class="card-header-custom">
                 <ul class="nav nav-tabs" id="myTab" role="tablist" style="border: none; gap: 3px;">
-                    <li class="nav-item">
-                        <button class="nav-link active" id="accounts-tab" data-bs-toggle="tab" data-bs-target="#accounts" type="button" role="tab">
-                            <i class="fas fa-users"></i> Tài khoản
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="treongon-tab" data-bs-toggle="tab" data-bs-target="#treongon" type="button" role="tab">
-                            <i class="fas fa-paper-plane"></i> Treo Ngôn
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="nhaytag-tab" data-bs-toggle="tab" data-bs-target="#nhaytag" type="button" role="tab">
-                            <i class="fas fa-tags"></i> Nhây Tag
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab">
-                            <i class="fas fa-tasks"></i> Quản Lý Task <span class="badge bg-danger" id="taskBadge" style="font-size: 10px;">0</span>
-                        </button>
-                    </li>
+                    <li class="nav-item"><button class="nav-link active" id="accounts-tab" data-bs-toggle="tab" data-bs-target="#accounts" type="button" role="tab"><i class="fas fa-users"></i> Tài khoản</button></li>
+                    <li class="nav-item"><button class="nav-link" id="treongon-tab" data-bs-toggle="tab" data-bs-target="#treongon" type="button" role="tab"><i class="fas fa-paper-plane"></i> Treo Ngôn</button></li>
+                    <li class="nav-item"><button class="nav-link" id="nhaytag-tab" data-bs-toggle="tab" data-bs-target="#nhaytag" type="button" role="tab"><i class="fas fa-tags"></i> Nhây Tag</button></li>
+                    <li class="nav-item"><button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab"><i class="fas fa-tasks"></i> Quản Lý Task <span class="badge bg-danger" id="taskBadge" style="font-size:10px;">0</span></button></li>
                 </ul>
             </div>
             
             <div class="card-body">
                 <div class="tab-content">
+                    <!-- ACCOUNTS TAB -->
                     <div class="tab-pane fade show active" id="accounts" role="tabpanel">
                         <div class="row">
                             <div class="col-md-5">
-                                <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
+                                <div class="card" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:16px;">
+                                    <div class="card-header" style="background:transparent;border:none;color:#fff;padding:15px 20px;font-weight:600;font-size:14px;">
                                         <i class="fas fa-plus-circle"></i> Thêm tài khoản Zalo
                                     </div>
                                     <div class="card-body">
-                                        <div class="alert alert-info">
-                                            <i class="fas fa-info-circle"></i> 
-                                            <strong>Định dạng cookies:</strong> {"name":"value","name2":"value2"}
-                                        </div>
+                                        <div class="alert alert-info"><i class="fas fa-info-circle"></i> <strong>Định dạng cookies:</strong> {"name":"value","name2":"value2"}</div>
                                         <form id="addAccountForm" onsubmit="addAccount(event)">
-                                            <div class="mb-3">
-                                                <label class="form-label">Tên tài khoản <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" id="accName" placeholder="VD: Zalo_01" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Cookies <span class="text-danger">*</span></label>
-                                                <textarea class="form-control" id="accCookies" rows="3" placeholder='{"zpsid":"xxx","zpw_sek":"xxx"}' required></textarea>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">IMEI <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" id="accImei" placeholder="Nhập IMEI..." required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Ghi chú</label>
-                                                <input type="text" class="form-control" id="accNote" placeholder="Ghi chú thêm...">
-                                            </div>
-                                            <button type="submit" class="btn btn-success-custom w-100">
-                                                <i class="fas fa-save"></i> Lưu tài khoản
-                                            </button>
+                                            <div class="mb-3"><label class="form-label">Tên tài khoản <span class="text-danger">*</span></label><input type="text" class="form-control" id="accName" placeholder="VD: Zalo_01" required></div>
+                                            <div class="mb-3"><label class="form-label">Cookies <span class="text-danger">*</span></label><textarea class="form-control" id="accCookies" rows="3" placeholder='{"zpsid":"xxx","zpw_sek":"xxx"}' required></textarea></div>
+                                            <div class="mb-3"><label class="form-label">IMEI <span class="text-danger">*</span></label><input type="text" class="form-control" id="accImei" placeholder="Nhập IMEI..." required></div>
+                                            <div class="mb-3"><label class="form-label">Ghi chú</label><input type="text" class="form-control" id="accNote" placeholder="Ghi chú thêm..."></div>
+                                            <button type="submit" class="btn btn-success-custom w-100"><i class="fas fa-save"></i> Lưu tài khoản</button>
                                         </form>
                                         <div id="addAccountStatus" class="mt-2"></div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-7">
-                                <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
+                                <div class="card" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:16px;">
+                                    <div class="card-header" style="background:transparent;border:none;color:#fff;padding:15px 20px;font-weight:600;font-size:14px;">
                                         <i class="fas fa-list"></i> Danh sách tài khoản Zalo
-                                        <span class="badge bg-light text-dark" id="accountListCount" style="float: right; font-size: 11px;">0</span>
+                                        <span class="badge bg-light text-dark" id="accountListCount" style="float:right;font-size:11px;">0</span>
                                     </div>
                                     <div class="card-body">
                                         <div class="list-container" id="accountList">
-                                            <div class="empty-state">
-                                                <i class="fas fa-users"></i>
-                                                <p>Chưa có tài khoản Zalo nào</p>
-                                                <small>Thêm tài khoản Zalo để bắt đầu</small>
-                                            </div>
+                                            <div class="empty-state"><i class="fas fa-users"></i><p>Chưa có tài khoản Zalo nào</p><small>Thêm tài khoản Zalo để bắt đầu</small></div>
                                         </div>
                                     </div>
                                 </div>
@@ -1671,147 +1611,53 @@ HTML_TEMPLATE = """
                         </div>
                     </div>
 
+                    <!-- TREO NGÔN TAB -->
                     <div class="tab-pane fade" id="treongon" role="tabpanel">
                         <div class="row">
                             <div class="col-md-4">
-                                <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
+                                <div class="card" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:16px;">
+                                    <div class="card-header" style="background:transparent;border:none;color:#fff;padding:15px 20px;font-weight:600;font-size:14px;">
                                         <i class="fas fa-comments"></i> Box chat
                                     </div>
                                     <div class="card-body">
-                                        <button class="btn btn-primary-custom w-100 mb-3" onclick="refreshBoxes('treongon')">
-                                            <i class="fas fa-sync"></i> Làm mới box chat
-                                        </button>
+                                        <button class="btn btn-primary-custom w-100 mb-3" onclick="refreshBoxes('treongon')"><i class="fas fa-sync"></i> Làm mới box chat</button>
                                         <div id="boxListContainer_treongon" class="list-container">
-                                            <div class="empty-state">
-                                                <i class="fas fa-inbox"></i>
-                                                <p>Chưa có box chat</p>
-                                                <small>Chọn tài khoản Zalo và làm mới</small>
-                                            </div>
+                                            <div class="empty-state"><i class="fas fa-inbox"></i><p>Chưa có box chat</p><small>Chọn tài khoản Zalo và làm mới</small></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-8">
-                                <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
+                                <div class="card" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:16px;">
+                                    <div class="card-header" style="background:transparent;border:none;color:#fff;padding:15px 20px;font-weight:600;font-size:14px;">
                                         <i class="fas fa-paper-plane"></i> Treo Ngôn
-                                        <span class="badge bg-light text-dark" id="sessionStatus_treongon" style="float: right; font-size: 11px;">Chưa đăng nhập</span>
+                                        <span class="badge bg-light text-dark" id="sessionStatus_treongon" style="float:right;font-size:11px;">Chưa đăng nhập</span>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-user"></i> Tài khoản đang dùng</label>
-                                                    <input type="text" class="form-control" id="currentAccountDisplay_treongon" readonly value="Chưa chọn">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-comment"></i> Box đã chọn</label>
-                                                    <input type="text" class="form-control" id="selectedBox_treongon" readonly placeholder="Chọn box">
-                                                </div>
-                                            </div>
+                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-user"></i> Tài khoản đang dùng</label><input type="text" class="form-control" id="currentAccountDisplay_treongon" readonly value="Chưa chọn"></div></div>
+                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-comment"></i> Box đã chọn</label><input type="text" class="form-control" id="selectedBox_treongon" readonly placeholder="Chọn box"></div></div>
                                         </div>
-                                        
                                         <div class="row mb-3">
-                                            <div class="col-md-4">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="tagAllCheck" checked>
-                                                    <label class="form-check-label" for="tagAllCheck">Tag All</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="form-label"><i class="fas fa-pencil-alt"></i> Chữ tag</label>
-                                                    <input type="text" class="form-control" id="tagText" value="@All" style="font-size: 13px;">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="form-label"><i class="fas fa-palette"></i> Màu tag</label>
-                                                    <div class="d-flex align-items-center">
-                                                        <input type="color" class="color-picker me-2" id="tagColorPicker" value="#db342e">
-                                                        <input type="text" class="form-control" id="tagColorInput" value="#db342e" style="width:80px; font-size:12px;">
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <div class="col-md-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="tagAllCheck" checked><label class="form-check-label" for="tagAllCheck">Tag All</label></div></div>
+                                            <div class="col-md-4"><div class="form-group"><label class="form-label"><i class="fas fa-pencil-alt"></i> Chữ tag</label><input type="text" class="form-control" id="tagText" value="@All" style="font-size:13px;"></div></div>
+                                            <div class="col-md-4"><div class="form-group"><label class="form-label"><i class="fas fa-palette"></i> Màu tag</label><div class="d-flex align-items-center"><input type="color" class="color-picker me-2" id="tagColorPicker" value="#db342e"><input type="text" class="form-control" id="tagColorInput" value="#db342e" style="width:80px;font-size:12px;"></div></div></div>
                                         </div>
-                                        
                                         <div class="row mb-3">
-                                            <div class="col-md-4">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="colorCheck" checked>
-                                                    <label class="form-check-label" for="colorCheck">Màu nội dung</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="boldCheck" checked>
-                                                    <label class="form-check-label" for="boldCheck">In đậm</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="form-label"><i class="fas fa-palette"></i> Màu nội dung</label>
-                                                    <div class="d-flex align-items-center">
-                                                        <input type="color" class="color-picker me-2" id="colorPicker" value="#db342e">
-                                                        <input type="text" class="form-control" id="colorInput" value="#db342e" style="width:80px; font-size:12px;">
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <div class="col-md-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="colorCheck" checked><label class="form-check-label" for="colorCheck">Màu nội dung</label></div></div>
+                                            <div class="col-md-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="boldCheck" checked><label class="form-check-label" for="boldCheck">In đậm</label></div></div>
+                                            <div class="col-md-4"><div class="form-group"><label class="form-label"><i class="fas fa-palette"></i> Màu nội dung</label><div class="d-flex align-items-center"><input type="color" class="color-picker me-2" id="colorPicker" value="#db342e"><input type="text" class="form-control" id="colorInput" value="#db342e" style="width:80px;font-size:12px;"></div></div></div>
                                         </div>
-                                        
                                         <div class="row">
-                                            <div class="col-md-3">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-clock"></i> Delay (giây)</label>
-                                                    <input type="number" class="form-control" id="delayInput_treongon" value="2" min="0.5" step="0.5">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-redo"></i> Số lần gửi</label>
-                                                    <input type="number" class="form-control" id="totalInput_treongon" value="1" min="1">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-font"></i> Size chữ</label>
-                                                    <input type="number" class="form-control" id="fontSizeInput" value="15" min="8" max="30">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-layer-group"></i> Màu mỗi dòng</label>
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" id="multiColorCheck">
-                                                        <label class="form-check-label" for="multiColorCheck">Nhiều màu</label>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <div class="col-md-3"><div class="mb-3"><label class="form-label"><i class="fas fa-clock"></i> Delay (giây)</label><input type="number" class="form-control" id="delayInput_treongon" value="2" min="0.5" step="0.5"></div></div>
+                                            <div class="col-md-3"><div class="mb-3"><label class="form-label"><i class="fas fa-redo"></i> Số lần gửi</label><input type="number" class="form-control" id="totalInput_treongon" value="1" min="1"></div></div>
+                                            <div class="col-md-3"><div class="mb-3"><label class="form-label"><i class="fas fa-font"></i> Size chữ</label><input type="number" class="form-control" id="fontSizeInput" value="15" min="8" max="30"></div></div>
+                                            <div class="col-md-3"><div class="mb-3"><label class="form-label"><i class="fas fa-layer-group"></i> Màu mỗi dòng</label><div class="form-check"><input class="form-check-input" type="checkbox" id="multiColorCheck"><label class="form-check-label" for="multiColorCheck">Nhiều màu</label></div></div></div>
                                         </div>
-                                        
-                                        <div class="mb-3">
-                                            <label class="form-label"><i class="fas fa-file-alt"></i> Nội dung</label>
-                                            <textarea class="form-control" id="contentInput_treongon" rows="4" placeholder="pndkdzcute&#10;pndkdzcute&#10;22:22"></textarea>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label class="form-label"><i class="fas fa-upload"></i> Hoặc tải file .txt</label>
-                                            <div class="file-upload-area" onclick="document.getElementById('fileInput_treongon').click()">
-                                                <i class="fas fa-cloud-upload-alt fa-2x"></i>
-                                                <p style="margin: 5px 0 0 0; font-size: 13px;">Nhấn để chọn file .txt</p>
-                                                <input type="file" id="fileInput_treongon" accept=".txt" style="display:none;" onchange="loadFileContent(event, 'contentInput_treongon', 'fileName_treongon', 'fileText_treongon')">
-                                            </div>
-                                            <div id="fileName_treongon" class="mt-2 text-success" style="display:none; font-size: 13px;">
-                                                📎 Đã chọn: <span id="fileText_treongon"></span>
-                                            </div>
-                                        </div>
-                                        
-                                        <button class="btn btn-primary-custom w-100" onclick="startTreongon()" id="treongonBtn">
-                                            <i class="fas fa-play"></i> Bắt đầu treo
-                                        </button>
+                                        <div class="mb-3"><label class="form-label"><i class="fas fa-file-alt"></i> Nội dung</label><textarea class="form-control" id="contentInput_treongon" rows="4" placeholder="pndkdzcute&#10;pndkdzcute&#10;22:22"></textarea></div>
+                                        <div class="mb-3"><label class="form-label"><i class="fas fa-upload"></i> Hoặc tải file .txt</label><div class="file-upload-area" onclick="document.getElementById('fileInput_treongon').click()"><i class="fas fa-cloud-upload-alt fa-2x"></i><p style="margin:5px 0 0 0;font-size:13px;">Nhấn để chọn file .txt</p><input type="file" id="fileInput_treongon" accept=".txt" style="display:none;" onchange="loadFileContent(event, 'contentInput_treongon', 'fileName_treongon', 'fileText_treongon')"></div>
+                                        <div id="fileName_treongon" class="mt-2 text-success" style="display:none;font-size:13px;">📎 Đã chọn: <span id="fileText_treongon"></span></div></div>
+                                        <button class="btn btn-primary-custom w-100" onclick="startTreongon()" id="treongonBtn"><i class="fas fa-play"></i> Bắt đầu treo</button>
                                         <div id="treongonStatus" class="mt-3"></div>
                                     </div>
                                 </div>
@@ -1819,96 +1665,51 @@ HTML_TEMPLATE = """
                         </div>
                     </div>
 
+                    <!-- NHAY TAG TAB -->
                     <div class="tab-pane fade" id="nhaytag" role="tabpanel">
                         <div class="row">
                             <div class="col-md-5">
-                                <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
+                                <div class="card" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:16px;">
+                                    <div class="card-header" style="background:transparent;border:none;color:#fff;padding:15px 20px;font-weight:600;font-size:14px;">
                                         <i class="fas fa-comments"></i> Box chat
                                     </div>
                                     <div class="card-body">
-                                        <button class="btn btn-primary-custom w-100 mb-3" onclick="refreshBoxes('nhaytag')">
-                                            <i class="fas fa-sync"></i> Làm mới box chat
-                                        </button>
+                                        <button class="btn btn-primary-custom w-100 mb-3" onclick="refreshBoxes('nhaytag')"><i class="fas fa-sync"></i> Làm mới box chat</button>
                                         <div id="boxListContainer_nhaytag" class="list-container">
-                                            <div class="empty-state">
-                                                <i class="fas fa-inbox"></i>
-                                                <p>Chưa có box chat</p>
-                                                <small>Chọn tài khoản Zalo và làm mới</small>
-                                            </div>
+                                            <div class="empty-state"><i class="fas fa-inbox"></i><p>Chưa có box chat</p><small>Chọn tài khoản Zalo và làm mới</small></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-7">
-                                <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
+                                <div class="card" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:16px;">
+                                    <div class="card-header" style="background:transparent;border:none;color:#fff;padding:15px 20px;font-weight:600;font-size:14px;">
                                         <i class="fas fa-tags"></i> Nhây Tag
-                                        <span class="badge bg-light text-dark" id="sessionStatus_nhaytag" style="float: right; font-size: 11px;">Chưa đăng nhập</span>
+                                        <span class="badge bg-light text-dark" id="sessionStatus_nhaytag" style="float:right;font-size:11px;">Chưa đăng nhập</span>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-user"></i> Tài khoản đang dùng</label>
-                                                    <input type="text" class="form-control" id="currentAccountDisplay_nhaytag" readonly value="Chưa chọn">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-comment"></i> Box đã chọn</label>
-                                                    <input type="text" class="form-control" id="selectedBox_nhaytag" readonly placeholder="Chọn box">
-                                                </div>
-                                            </div>
+                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-user"></i> Tài khoản đang dùng</label><input type="text" class="form-control" id="currentAccountDisplay_nhaytag" readonly value="Chưa chọn"></div></div>
+                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-comment"></i> Box đã chọn</label><input type="text" class="form-control" id="selectedBox_nhaytag" readonly placeholder="Chọn box"></div></div>
                                         </div>
-                                        
                                         <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-clock"></i> Delay (giây)</label>
-                                                    <input type="number" class="form-control" id="delayInput_nhaytag" value="5" min="1" step="0.5">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-file-alt"></i> File nội dung</label>
-                                                    <div class="file-upload-area" onclick="document.getElementById('fileInput_nhaytag').click()" style="padding: 10px;">
-                                                        <i class="fas fa-cloud-upload-alt"></i>
-                                                        <span style="font-size: 13px;">Nhấn để chọn file .txt</span>
-                                                        <input type="file" id="fileInput_nhaytag" accept=".txt" style="display:none;" onchange="loadNhayFile(event)">
-                                                    </div>
-                                                    <div id="fileName_nhaytag" class="mt-2 text-success" style="display:none; font-size: 13px;">
-                                                        📎 Đã chọn: <span id="fileText_nhaytag"></span>
-                                                    </div>
-                                                    <div id="nhayFilePreview" class="mt-2"></div>
-                                                    <input type="hidden" id="nhayFileContent" value="">
-                                                    <small style="color: rgba(255,255,255,0.3); font-size: 11px;">Mỗi dòng là 1 đoạn nội dung sẽ được gửi</small>
-                                                </div>
-                                            </div>
+                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-clock"></i> Delay (giây)</label><input type="number" class="form-control" id="delayInput_nhaytag" value="5" min="1" step="0.5"></div></div>
+                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-file-alt"></i> File nội dung</label><div class="file-upload-area" onclick="document.getElementById('fileInput_nhaytag').click()" style="padding:10px;"><i class="fas fa-cloud-upload-alt"></i><span style="font-size:13px;">Nhấn để chọn file .txt</span><input type="file" id="fileInput_nhaytag" accept=".txt" style="display:none;" onchange="loadNhayFile(event)"></div>
+                                            <div id="fileName_nhaytag" class="mt-2 text-success" style="display:none;font-size:13px;">📎 Đã chọn: <span id="fileText_nhaytag"></span></div>
+                                            <div id="nhayFilePreview" class="mt-2"></div>
+                                            <input type="hidden" id="nhayFileContent" value="">
+                                            <small style="color:rgba(255,255,255,0.3);font-size:11px;">Mỗi dòng là 1 đoạn nội dung sẽ được gửi</small></div></div>
                                         </div>
-                                        
-                                        <div class="mb-3">
-                                            <label class="form-label"><i class="fas fa-users"></i> Thành viên (chọn người tag)</label>
-                                            <button class="btn btn-sm btn-primary-custom mb-2" onclick="fetchMembers('nhaytag')" style="font-size: 12px; padding: 5px 15px;">
-                                                <i class="fas fa-sync"></i> Lấy danh sách thành viên
-                                            </button>
-                                            <div id="memberListContainer_nhaytag" class="member-list">
-                                                <div class="empty-state">
-                                                    <i class="fas fa-users"></i>
-                                                    <p>Chưa có thành viên</p>
-                                                    <small>Nhấn nút trên để lấy</small>
-                                                </div>
-                                            </div>
+                                        <div class="mb-3"><label class="form-label"><i class="fas fa-users"></i> Thành viên (chọn người tag)</label>
+                                            <button class="btn btn-sm btn-primary-custom mb-2" onclick="fetchMembers('nhaytag')" style="font-size:12px;padding:5px 15px;"><i class="fas fa-sync"></i> Lấy danh sách thành viên</button>
+                                            <div id="memberListContainer_nhaytag" class="member-list"><div class="empty-state"><i class="fas fa-users"></i><p>Chưa có thành viên</p><small>Nhấn nút trên để lấy</small></div></div>
                                             <div class="mt-2">
-                                                <button class="btn btn-sm btn-outline-success" onclick="selectAllMembers('nhaytag')" style="border-color: rgba(40,167,69,0.3); color: #28a745; font-size: 12px;">Chọn tất cả</button>
-                                                <button class="btn btn-sm btn-outline-secondary" onclick="deselectAllMembers('nhaytag')" style="border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); font-size: 12px;">Bỏ chọn</button>
-                                                <span class="ms-2" id="memberCount_nhaytag" style="color: rgba(255,255,255,0.4); font-size: 13px;">Đã chọn: 0</span>
+                                                <button class="btn btn-sm btn-outline-success" onclick="selectAllMembers('nhaytag')" style="border-color:rgba(40,167,69,0.3);color:#28a745;font-size:12px;">Chọn tất cả</button>
+                                                <button class="btn btn-sm btn-outline-secondary" onclick="deselectAllMembers('nhaytag')" style="border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);font-size:12px;">Bỏ chọn</button>
+                                                <span class="ms-2" id="memberCount_nhaytag" style="color:rgba(255,255,255,0.4);font-size:13px;">Đã chọn: 0</span>
                                             </div>
                                         </div>
-                                        
-                                        <button class="btn btn-warning-custom w-100" onclick="startNhaytag()" id="nhaytagBtn">
-                                            <i class="fas fa-play"></i> Bắt đầu nhây tag
-                                        </button>
+                                        <button class="btn btn-warning-custom w-100" onclick="startNhaytag()" id="nhaytagBtn"><i class="fas fa-play"></i> Bắt đầu nhây tag</button>
                                         <div id="nhaytagStatus" class="mt-3"></div>
                                     </div>
                                 </div>
@@ -1916,30 +1717,21 @@ HTML_TEMPLATE = """
                         </div>
                     </div>
 
+                    <!-- TASKS TAB -->
                     <div class="tab-pane fade" id="tasks" role="tabpanel">
-                        <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                            <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
+                        <div class="card" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:16px;">
+                            <div class="card-header" style="background:transparent;border:none;color:#fff;padding:15px 20px;font-weight:600;font-size:14px;">
                                 <i class="fas fa-tasks"></i> Quản Lý Task
-                                <span class="badge bg-light text-dark" id="taskListCount" style="float: right; font-size: 11px;">0</span>
+                                <span class="badge bg-light text-dark" id="taskListCount" style="float:right;font-size:11px;">0</span>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshTasks()" style="border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); font-size: 12px;">
-                                        <i class="fas fa-sync"></i> Làm mới
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="stopAllTasks()" style="border-color: rgba(255,193,7,0.2); color: #ffc107; font-size: 12px;">
-                                        <i class="fas fa-stop"></i> Dừng tất cả
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="clearFinishedTasks()" style="border-color: rgba(220,53,69,0.2); color: #dc3545; font-size: 12px;">
-                                        <i class="fas fa-trash"></i> Xóa task hoàn thành
-                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshTasks()" style="border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:12px;"><i class="fas fa-sync"></i> Làm mới</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="stopAllTasks()" style="border-color:rgba(255,193,7,0.2);color:#ffc107;font-size:12px;"><i class="fas fa-stop"></i> Dừng tất cả</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="clearFinishedTasks()" style="border-color:rgba(220,53,69,0.2);color:#dc3545;font-size:12px;"><i class="fas fa-trash"></i> Xóa task hoàn thành</button>
                                 </div>
-                                <div class="list-container" id="taskList" style="max-height: 500px;">
-                                    <div class="empty-state">
-                                        <i class="fas fa-tasks"></i>
-                                        <p>Chưa có task nào</p>
-                                        <small>Bắt đầu treo ngôn hoặc nhây tag để tạo task</small>
-                                    </div>
+                                <div class="list-container" id="taskList" style="max-height:500px;">
+                                    <div class="empty-state"><i class="fas fa-tasks"></i><p>Chưa có task nào</p><small>Bắt đầu treo ngôn hoặc nhây tag để tạo task</small></div>
                                 </div>
                             </div>
                         </div>
@@ -1948,17 +1740,9 @@ HTML_TEMPLATE = """
             </div>
         </div>
 
+        <!-- FOOTER -->
         <div class="footer-main">
-            <p style="margin: 0;">
-                <i class="fas fa-crown" style="color: #f7b503;"></i>
-                <strong style="color: rgba(255,255,255,0.4);">WEB PNDK TOOL ĐA APP</strong>
-                <span class="heart">❤️</span>
-                Phát triển bởi <a href="#">Phan Nguyễn Đăng Khoa</a>
-                <span style="margin: 0 8px;">|</span>
-                <i class="fas fa-code"></i> v3.0
-                <span style="margin: 0 8px;">|</span>
-                <i class="fas fa-shield-alt"></i> Bảo mật & An toàn
-            </p>
+            <p style="margin:0;"><i class="fas fa-crown" style="color:#f7b503;"></i> <strong style="color:rgba(255,255,255,0.4);">WEB PNDK TOOL ĐA APP</strong> <span class="heart">❤️</span> Phát triển bởi <a href="#">Phan Nguyễn Đăng Khoa</a> <span style="margin:0 8px;">|</span> <i class="fas fa-code"></i> v3.0 <span style="margin:0 8px;">|</span> <i class="fas fa-shield-alt"></i> Bảo mật & An toàn</p>
         </div>
     </div>
 
@@ -1978,9 +1762,7 @@ HTML_TEMPLATE = """
             fetch('/api/logout', { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    window.location.href = '/login';
-                }
+                if (data.success) window.location.href = '/login';
             });
         }
 
@@ -2023,20 +1805,18 @@ HTML_TEMPLATE = """
         function loadNhayFile(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
             const reader = new FileReader();
             reader.onload = function(e) {
                 const content = e.target.result;
                 document.getElementById('nhayFileContent').value = content;
                 document.getElementById('fileName_nhaytag').style.display = 'block';
                 document.getElementById('fileText_nhaytag').textContent = file.name;
-                
                 const lines = content.split('\\n').filter(l => l.trim());
                 const preview = lines.slice(0, 10).map(l => l.trim()).join('\\n');
                 document.getElementById('nhayFilePreview').innerHTML = 
-                    `<div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 8px 12px; margin-top: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                        <small style="color: rgba(255,255,255,0.4);"><strong>📄 ${lines.length} dòng</strong></small>
-                        <pre style="max-height:100px; overflow-y:auto; font-size:12px; margin:5px 0 0 0; background: rgba(0,0,0,0.2); padding:8px; border-radius:4px; color: rgba(255,255,255,0.5);">${preview}${lines.length > 10 ? '\\n...' : ''}</pre>
+                    `<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px 12px;margin-top:8px;border:1px solid rgba(255,255,255,0.05);">
+                        <small style="color:rgba(255,255,255,0.4);"><strong>📄 ${lines.length} dòng</strong></small>
+                        <pre style="max-height:100px;overflow-y:auto;font-size:12px;margin:5px 0 0 0;background:rgba(0,0,0,0.2);padding:8px;border-radius:4px;color:rgba(255,255,255,0.5);">${preview}${lines.length > 10 ? '\\n...' : ''}</pre>
                     </div>`;
             };
             reader.readAsText(file);
@@ -2049,16 +1829,11 @@ HTML_TEMPLATE = """
             const cookies = document.getElementById('accCookies').value.trim();
             const imei = document.getElementById('accImei').value.trim();
             const note = document.getElementById('accNote').value.trim();
-            
             if (!name || !cookies || !imei) {
-                document.getElementById('addAccountStatus').innerHTML = 
-                    '<div class="alert alert-danger">⚠️ Vui lòng nhập đầy đủ!</div>';
+                document.getElementById('addAccountStatus').innerHTML = '<div class="alert alert-danger">⚠️ Vui lòng nhập đầy đủ!</div>';
                 return;
             }
-            
-            document.getElementById('addAccountStatus').innerHTML = 
-                '<div class="text-center"><div class="spinner-small"></div> Đang lưu...</div>';
-            
+            document.getElementById('addAccountStatus').innerHTML = '<div class="text-center"><div class="spinner-small"></div> Đang lưu...</div>';
             fetch('/add_account', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2067,33 +1842,24 @@ HTML_TEMPLATE = """
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById('addAccountStatus').innerHTML = 
-                        '<div class="alert alert-success">✅ ' + data.message + '</div>';
+                    document.getElementById('addAccountStatus').innerHTML = '<div class="alert alert-success">✅ ' + data.message + '</div>';
                     setTimeout(() => location.reload(), 1000);
                 } else {
-                    document.getElementById('addAccountStatus').innerHTML = 
-                        '<div class="alert alert-danger">❌ ' + data.message + '</div>';
+                    document.getElementById('addAccountStatus').innerHTML = '<div class="alert alert-danger">❌ ' + data.message + '</div>';
                 }
             })
             .catch(err => {
-                document.getElementById('addAccountStatus').innerHTML = 
-                    '<div class="alert alert-danger">❌ Lỗi: ' + err + '</div>';
+                document.getElementById('addAccountStatus').innerHTML = '<div class="alert alert-danger">❌ Lỗi: ' + err + '</div>';
             });
         }
 
         function useAccount(accountId) {
-            document.getElementById('accountList').innerHTML = 
-                '<div class="text-center"><div class="spinner-small"></div> Đang đăng nhập...</div>';
-            
+            document.getElementById('accountList').innerHTML = '<div class="text-center"><div class="spinner-small"></div> Đang đăng nhập...</div>';
             fetch('/use_account/' + accountId, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('❌ ' + data.message);
-                    location.reload();
-                }
+                if (data.success) location.reload();
+                else { alert('❌ ' + data.message); location.reload(); }
             });
         }
 
@@ -2112,7 +1878,6 @@ HTML_TEMPLATE = """
             const containerId = mode === 'treongon' ? 'boxListContainer_treongon' : 'boxListContainer_nhaytag';
             const container = document.getElementById(containerId);
             container.innerHTML = '<div class="text-center"><div class="spinner-small"></div> Đang lấy box...</div>';
-            
             fetch('/get_boxes')
             .then(res => res.json())
             .then(data => {
@@ -2128,17 +1893,11 @@ HTML_TEMPLATE = """
                     });
                     container.innerHTML = html;
                 } else {
-                    container.innerHTML = `<div class="empty-state">
-                        <i class="fas fa-inbox"></i>
-                        <p>${data.message || 'Không tìm thấy box chat'}</p>
-                    </div>`;
+                    container.innerHTML = `<div class="empty-state"><i class="fas fa-inbox"></i><p>${data.message || 'Không tìm thấy box chat'}</p></div>`;
                 }
             })
             .catch(err => {
-                container.innerHTML = `<div class="empty-state">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>Lỗi: ${err}</p>
-                </div>`;
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Lỗi: ${err}</p></div>`;
             });
         }
 
@@ -2160,7 +1919,6 @@ HTML_TEMPLATE = """
                     el.querySelector('.box-check').textContent = '';
                 });
             }
-            
             const el = document.getElementById(boxId);
             if (el) {
                 el.classList.add('selected');
@@ -2175,10 +1933,8 @@ HTML_TEMPLATE = """
                 alert('⚠️ Chọn box chat trước!');
                 return;
             }
-            
             const container = document.getElementById('memberListContainer_nhaytag');
             container.innerHTML = '<div class="text-center"><div class="spinner-small"></div> Đang lấy thành viên...</div>';
-            
             fetch('/get_members/' + selectedBoxId_nhaytag)
             .then(res => res.json())
             .then(data => {
@@ -2187,17 +1943,11 @@ HTML_TEMPLATE = """
                     selectedMembers_nhaytag = [];
                     renderMembers('nhaytag');
                 } else {
-                    container.innerHTML = `<div class="empty-state">
-                        <i class="fas fa-users"></i>
-                        <p>${data.message || 'Không lấy được thành viên'}</p>
-                    </div>`;
+                    container.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>${data.message || 'Không lấy được thành viên'}</p></div>`;
                 }
             })
             .catch(err => {
-                container.innerHTML = `<div class="empty-state">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>Lỗi: ${err}</p>
-                </div>`;
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Lỗi: ${err}</p></div>`;
             });
         }
 
@@ -2207,7 +1957,6 @@ HTML_TEMPLATE = """
                 container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>Chưa có thành viên</p></div>';
                 return;
             }
-            
             let html = '';
             members_nhaytag.forEach((member, index) => {
                 const isSelected = selectedMembers_nhaytag.includes(member.id);
@@ -2222,11 +1971,8 @@ HTML_TEMPLATE = """
 
         function toggleMember(memberId) {
             const idx = selectedMembers_nhaytag.indexOf(memberId);
-            if (idx === -1) {
-                selectedMembers_nhaytag.push(memberId);
-            } else {
-                selectedMembers_nhaytag.splice(idx, 1);
-            }
+            if (idx === -1) selectedMembers_nhaytag.push(memberId);
+            else selectedMembers_nhaytag.splice(idx, 1);
             renderMembers('nhaytag');
         }
 
@@ -2246,13 +1992,11 @@ HTML_TEMPLATE = """
                 alert('⚠️ Chọn box chat!');
                 return;
             }
-            
             const content = document.getElementById('contentInput_treongon').value;
             if (!content.trim()) {
                 alert('⚠️ Nhập nội dung!');
                 return;
             }
-            
             const delay = parseFloat(document.getElementById('delayInput_treongon').value) || 2;
             const total = parseInt(document.getElementById('totalInput_treongon').value) || 1;
             const tagAll = document.getElementById('tagAllCheck').checked;
@@ -2291,14 +2035,10 @@ HTML_TEMPLATE = """
             .then(data => {
                 btn.innerHTML = '<i class="fas fa-play"></i> Bắt đầu treo';
                 btn.disabled = false;
-                
                 const status = document.getElementById('treongonStatus');
                 if (data.success) {
                     status.innerHTML = '<div class="alert alert-success">✅ ' + data.message + '</div>';
-                    setTimeout(() => {
-                        status.innerHTML = '';
-                        refreshTasks();
-                    }, 2000);
+                    setTimeout(() => { status.innerHTML = ''; refreshTasks(); }, 2000);
                 } else {
                     status.innerHTML = '<div class="alert alert-danger">❌ ' + data.message + '</div>';
                 }
@@ -2306,8 +2046,7 @@ HTML_TEMPLATE = """
             .catch(err => {
                 btn.innerHTML = '<i class="fas fa-play"></i> Bắt đầu treo';
                 btn.disabled = false;
-                document.getElementById('treongonStatus').innerHTML = 
-                    '<div class="alert alert-danger">❌ Lỗi: ' + err + '</div>';
+                document.getElementById('treongonStatus').innerHTML = '<div class="alert alert-danger">❌ Lỗi: ' + err + '</div>';
             });
         }
 
@@ -2317,20 +2056,16 @@ HTML_TEMPLATE = """
                 alert('⚠️ Chọn box chat!');
                 return;
             }
-            
             if (selectedMembers_nhaytag.length === 0) {
                 alert('⚠️ Chọn ít nhất 1 thành viên để tag!');
                 return;
             }
-            
             const delay = parseFloat(document.getElementById('delayInput_nhaytag').value) || 5;
             const content = document.getElementById('nhayFileContent').value;
-            
             if (!content.trim()) {
                 alert('⚠️ Vui lòng upload file nội dung!');
                 return;
             }
-
             const btn = document.getElementById('nhaytagBtn');
             btn.innerHTML = '<span class="spinner-small"></span> Đang khởi động...';
             btn.disabled = true;
@@ -2350,14 +2085,10 @@ HTML_TEMPLATE = """
             .then(data => {
                 btn.innerHTML = '<i class="fas fa-play"></i> Bắt đầu nhây tag';
                 btn.disabled = false;
-                
                 const status = document.getElementById('nhaytagStatus');
                 if (data.success) {
                     status.innerHTML = '<div class="alert alert-success">✅ ' + data.message + '</div>';
-                    setTimeout(() => {
-                        status.innerHTML = '';
-                        refreshTasks();
-                    }, 2000);
+                    setTimeout(() => { status.innerHTML = ''; refreshTasks(); }, 2000);
                 } else {
                     status.innerHTML = '<div class="alert alert-danger">❌ ' + data.message + '</div>';
                 }
@@ -2365,53 +2096,47 @@ HTML_TEMPLATE = """
             .catch(err => {
                 btn.innerHTML = '<i class="fas fa-play"></i> Bắt đầu nhây tag';
                 btn.disabled = false;
-                document.getElementById('nhaytagStatus').innerHTML = 
-                    '<div class="alert alert-danger">❌ Lỗi: ' + err + '</div>';
+                document.getElementById('nhaytagStatus').innerHTML = '<div class="alert alert-danger">❌ Lỗi: ' + err + '</div>';
             });
         }
 
         // ===== TASKS =====
         function stopTask(taskId, type) {
             if (!confirm('Dừng task #' + taskId + '?')) return;
-            
             const endpoint = type === 'nhaytag' ? '/stop_nhaytag/' : '/stop_spam/';
             fetch(endpoint + taskId, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    refreshTasks();
-                    alert('✅ Đã dừng task #' + taskId);
-                } else {
-                    alert('❌ ' + data.message);
-                }
+                if (data.success) { refreshTasks(); alert('✅ Đã dừng task #' + taskId); }
+                else alert('❌ ' + data.message);
             });
         }
 
         function stopAllTasks() {
             if (!confirm('Dừng tất cả task của bạn?')) return;
-            
             fetch('/stop_all_tasks', { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    refreshTasks();
-                    alert('✅ ' + data.message);
-                } else {
-                    alert('❌ ' + data.message);
-                }
+                if (data.success) { refreshTasks(); alert('✅ ' + data.message); }
+                else alert('❌ ' + data.message);
             });
         }
 
         function clearFinishedTasks() {
             if (!confirm('Xóa task đã hoàn thành?')) return;
-            
             fetch('/clear_finished_tasks', { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    refreshTasks();
-                    alert('✅ ' + data.message);
-                }
+                if (data.success) { refreshTasks(); alert('✅ ' + data.message); }
+            });
+        }
+
+        function removeTask(taskId) {
+            if (!confirm('Xóa task #' + taskId + '?')) return;
+            fetch('/remove_task/' + taskId, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) refreshTasks();
             });
         }
 
@@ -2424,24 +2149,16 @@ HTML_TEMPLATE = """
                 const badge = document.getElementById('taskBadge');
                 const totalCount = document.getElementById('taskCount');
                 const runningCount = document.getElementById('runningCount');
-                
                 const tasks = data.tasks || [];
                 const running = tasks.filter(t => t.status === 'running');
-                
                 count.textContent = tasks.length;
                 badge.textContent = tasks.length;
                 totalCount.textContent = tasks.length;
                 runningCount.textContent = running.length;
-                
                 if (tasks.length === 0) {
-                    container.innerHTML = `<div class="empty-state">
-                        <i class="fas fa-tasks"></i>
-                        <p>Chưa có task nào</p>
-                        <small>Bắt đầu treo ngôn hoặc nhây tag để tạo task</small>
-                    </div>`;
+                    container.innerHTML = `<div class="empty-state"><i class="fas fa-tasks"></i><p>Chưa có task nào</p><small>Bắt đầu treo ngôn hoặc nhây tag để tạo task</small></div>`;
                     return;
                 }
-                
                 let html = '';
                 tasks.forEach(task => {
                     const statusClass = task.status;
@@ -2452,52 +2169,30 @@ HTML_TEMPLATE = """
                         'stopped': '⏹ Đã dừng',
                         'die': '🔴 Cookie Die'
                     }[task.status] || task.status;
-                    
                     const progress = task.progress || 0;
                     const typeIcon = task.type === 'nhaytag' ? '🏷' : '📨';
                     const tagInfo = task.tag_text ? ` | 🏷 ${task.tag_text}` : '';
                     const memberInfo = task.member_count ? ` | 👥 ${task.member_count} người` : '';
-                    
                     html += `<div class="task-item" id="task_${task.id}">
                         <div class="task-header">
-                            <div>
-                                <strong style="font-size: 14px;">${typeIcon} #${task.id} — ${task.box_name}</strong>
-                                <span class="task-status ${statusClass}">${statusLabel}</span>
-                            </div>
+                            <div><strong style="font-size:14px;">${typeIcon} #${task.id} — ${task.box_name}</strong> <span class="task-status ${statusClass}">${statusLabel}</span></div>
                             ${task.status === 'running' ? 
-                                `<button class="btn btn-danger btn-sm" onclick="stopTask('${task.id}', '${task.type}')" style="font-size: 11px; padding: 4px 12px;">
-                                    <i class="fas fa-stop"></i> Dừng
-                                </button>` : 
-                                `<button class="btn btn-outline-secondary btn-sm" onclick="removeTask('${task.id}')" style="font-size: 11px; padding: 4px 12px; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4);">
-                                    <i class="fas fa-trash"></i>
-                                </button>`
+                                `<button class="btn btn-danger btn-sm" onclick="stopTask('${task.id}', '${task.type}')" style="font-size:11px;padding:4px 12px;"><i class="fas fa-stop"></i> Dừng</button>` : 
+                                `<button class="btn btn-outline-secondary btn-sm" onclick="removeTask('${task.id}')" style="font-size:11px;padding:4px 12px;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);"><i class="fas fa-trash"></i></button>`
                             }
                         </div>
-                        <div class="text-muted small" style="color: rgba(255,255,255,0.3); font-size: 12px;">
+                        <div style="color:rgba(255,255,255,0.3);font-size:12px;">
                             ${task.type === 'treongon' ? `Đã gửi: ${task.sent}/${task.total} | Delay: ${task.delay}s` : `Delay: ${task.delay}s`}
                             ${tagInfo}${memberInfo}
                             ${task.error ? ' | ❌ ' + task.error : ''}
+                            ${task.finished_at ? ' | 🕐 ' + task.finished_at : ''}
                         </div>
-                        <div class="task-progress">
-                            <div class="progress-fill" style="width: ${progress}%;"></div>
-                        </div>
+                        <div class="task-progress"><div class="progress-fill" style="width:${progress}%;"></div></div>
                     </div>`;
                 });
                 container.innerHTML = html;
             })
-            .catch(err => {
-                console.error('Lỗi refresh tasks:', err);
-            });
-        }
-
-        function removeTask(taskId) {
-            if (!confirm('Xóa task #' + taskId + '?')) return;
-            
-            fetch('/remove_task/' + taskId, { method: 'DELETE' })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) refreshTasks();
-            });
+            .catch(err => console.error('Lỗi refresh tasks:', err));
         }
 
         // ===== LOAD DATA =====
@@ -2509,51 +2204,32 @@ HTML_TEMPLATE = """
                 const count = document.getElementById('accountListCount');
                 const accCount = document.getElementById('accCount');
                 const activeCount = document.getElementById('activeCount');
-                
                 const accounts = data.accounts || [];
                 accCount.textContent = accounts.length;
                 activeCount.textContent = accounts.filter(a => a.status === 'active').length;
-                
                 if (accounts.length === 0) {
-                    container.innerHTML = `<div class="empty-state">
-                        <i class="fas fa-users"></i>
-                        <p>Chưa có tài khoản Zalo nào</p>
-                        <small>Thêm tài khoản Zalo để bắt đầu</small>
-                    </div>`;
+                    container.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>Chưa có tài khoản Zalo nào</p><small>Thêm tài khoản Zalo để bắt đầu</small></div>`;
                     count.textContent = '0';
                     return;
                 }
-                
                 let html = '';
                 accounts.forEach(acc => {
                     const statusClass = acc.status === 'active' ? 'active' : 'inactive';
                     const isCurrent = acc.id === data.current_id;
                     html += `<div class="account-item" id="acc_${acc.id}">
                         <div>
-                            <div class="account-name">
-                                <i class="fas fa-user"></i> ${acc.name} 
-                                ${isCurrent ? '<span class="badge bg-primary" style="font-size: 10px;">Đang dùng</span>' : ''}
-                                ${acc.login_success ? '<span class="badge bg-success" style="font-size: 10px;"><i class="fas fa-check"></i></span>' : ''}
-                            </div>
-                            <div class="text-muted small" style="color: rgba(255,255,255,0.2); font-size: 11px;">
-                                <i class="fas fa-mobile-alt"></i> ${(acc.imei || '').substring(0,20)}... 
-                                <span class="ms-2"><i class="far fa-clock"></i> ${(acc.created_at || '').substring(0,10)}</span>
-                            </div>
+                            <div class="account-name"><i class="fas fa-user"></i> ${acc.name} ${isCurrent ? '<span class="badge bg-primary" style="font-size:10px;">Đang dùng</span>' : ''} ${acc.login_success ? '<span class="badge bg-success" style="font-size:10px;"><i class="fas fa-check"></i></span>' : ''}</div>
+                            <div style="color:rgba(255,255,255,0.2);font-size:11px;"><i class="fas fa-mobile-alt"></i> ${(acc.imei || '').substring(0,20)}... <span class="ms-2"><i class="far fa-clock"></i> ${(acc.created_at || '').substring(0,10)}</span></div>
                         </div>
                         <div>
                             <span class="account-status ${statusClass}">${acc.status}</span>
-                            <button class="btn btn-sm btn-primary ms-2" onclick="useAccount('${acc.id}')" title="Sử dụng" style="background: var(--primary); border: none; padding: 4px 10px; font-size: 12px;">
-                                <i class="fas fa-play"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger ms-1" onclick="deleteAccount('${acc.id}')" title="Xóa" style="background: var(--danger); border: none; padding: 4px 10px; font-size: 12px;">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            <button class="btn btn-sm btn-primary ms-2" onclick="useAccount('${acc.id}')" title="Sử dụng" style="background:var(--primary);border:none;padding:4px 10px;font-size:12px;"><i class="fas fa-play"></i></button>
+                            <button class="btn btn-sm btn-danger ms-1" onclick="deleteAccount('${acc.id}')" title="Xóa" style="background:var(--danger);border:none;padding:4px 10px;font-size:12px;"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>`;
                 });
                 container.innerHTML = html;
                 count.textContent = accounts.length;
-                
                 if (data.current_name) {
                     document.getElementById('currentAccountDisplay_treongon').value = data.current_name;
                     document.getElementById('sessionStatus_treongon').textContent = '✅ ' + data.current_name;
@@ -2639,7 +2315,6 @@ def api_register():
 def api_logout():
     username = session.get('username')
     if username:
-        # Xóa account_manager của user khỏi bộ nhớ
         if username in account_managers:
             del account_managers[username]
     session.clear()
@@ -3030,7 +2705,6 @@ def stop_spam(task_id):
         if not task:
             return jsonify({'success': False, 'message': 'Không tìm thấy task'})
         
-        # Kiểm tra task có phải của user hiện tại không
         username = session.get('username', 'default')
         if task.get('username') != username:
             return jsonify({'success': False, 'message': 'Bạn không có quyền dừng task này!'})
@@ -3055,7 +2729,6 @@ def stop_nhaytag(task_id):
         if not task:
             return jsonify({'success': False, 'message': 'Không tìm thấy task'})
         
-        # Kiểm tra task có phải của user hiện tại không
         username = session.get('username', 'default')
         if task.get('username') != username:
             return jsonify({'success': False, 'message': 'Bạn không có quyền dừng task này!'})
@@ -3074,7 +2747,6 @@ def stop_nhaytag(task_id):
 
 @app.route('/stop_all_tasks', methods=['POST'])
 def stop_all_tasks():
-    """Chỉ dừng task của user hiện tại"""
     global spam_tasks, nhaytag_tasks
     
     load_tasks()
@@ -3110,7 +2782,6 @@ def stop_all_tasks():
 def remove_task(task_id):
     global spam_tasks, nhaytag_tasks
     try:
-        # Kiểm tra task thuộc user nào
         username = session.get('username', 'default')
         
         if task_id in spam_tasks:
@@ -3130,7 +2801,6 @@ def remove_task(task_id):
 
 @app.route('/clear_finished_tasks', methods=['POST'])
 def clear_finished_tasks():
-    """Chỉ xóa task hoàn thành của user hiện tại"""
     global spam_tasks, nhaytag_tasks
     
     load_tasks()
@@ -3161,7 +2831,6 @@ def clear_finished_tasks():
 
 @app.route('/get_all_tasks', methods=['GET'])
 def get_all_tasks():
-    """Lấy tasks của user hiện tại"""
     global spam_tasks, nhaytag_tasks
     
     load_tasks()
@@ -3171,7 +2840,6 @@ def get_all_tasks():
     username = session.get('username', 'default')
     
     for tid, task in spam_tasks.items():
-        # Chỉ lấy task của user hiện tại
         if task.get('username') != username:
             continue
             
@@ -3197,7 +2865,6 @@ def get_all_tasks():
         })
     
     for tid, task in nhaytag_tasks.items():
-        # Chỉ lấy task của user hiện tại
         if task.get('username') != username:
             continue
             
