@@ -1,4 +1,4 @@
-# webpndk.py - Zalo Tool Treo Ngôn + Nhây Tag (Có Đăng Nhập/Đăng Ký)
+# webpndk.py - Zalo Tool Treo Ngôn + Nhây Tag (Có Đăng Nhập/Đăng Ký + Nhạc Nền)
 # -*- coding: utf-8 -*-
 
 # ===== CHẶN LOG ZALO API =====
@@ -7,7 +7,6 @@ import sys
 import os
 import contextlib
 import hashlib
-import uuid
 
 # Tắt tất cả log của thư viện zlapi
 logging.getLogger("zalo").setLevel(logging.ERROR)
@@ -92,34 +91,25 @@ def save_users(users):
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# ===== ACCOUNT MANAGER RIÊNG CHO TỪNG USER =====
+# ===== ACCOUNT MANAGER =====
 account_managers = {}
-
-def get_account_manager():
-    """Lấy account_manager riêng cho từng user"""
-    username = session.get('username')
-    if not username:
-        return None
-    
-    if username not in account_managers:
-        account_managers[username] = AccountManager(username)
-    
-    return account_managers[username]
-
-# ===== SESSION =====
 current_session = {}
 spam_tasks = {}
 nhaytag_tasks = {}
 
-# ===== TASKS FILE =====
+def get_account_manager():
+    username = session.get('username')
+    if not username:
+        return None
+    if username not in account_managers:
+        account_managers[username] = AccountManager(username)
+    return account_managers[username]
+
 def get_tasks_files(username):
-    """Lấy tên file task riêng cho từng user"""
     return f"tasks_{username}.json", f"nhaytag_tasks_{username}.json"
 
 def load_tasks():
-    """Load tasks riêng cho từng user"""
     global spam_tasks, nhaytag_tasks
-    
     username = session.get('username', 'default')
     TASKS_FILE, NHAYTAG_FILE = get_tasks_files(username)
     
@@ -147,7 +137,6 @@ def load_tasks():
             nhaytag_tasks = {}
 
 def save_tasks():
-    """Lưu tasks riêng cho từng user"""
     try:
         username = session.get('username', 'default')
         TASKS_FILE, NHAYTAG_FILE = get_tasks_files(username)
@@ -175,7 +164,6 @@ def save_tasks():
         logger.error(f"❌ Lỗi save tasks cho {session.get('username', 'default')}: {e}")
 
 def cleanup_dead_tasks():
-    """Dọn dẹp task đã chết riêng cho từng user"""
     for task_id, task in list(spam_tasks.items()):
         if task.get('status') in ['done', 'error', 'stopped']:
             if 'finished_at' in task:
@@ -239,7 +227,6 @@ def worker_nhaytag(imei: str, cookies: dict, group_id: str,
             profiles = {}
             if user_ids:
                 for i in range(0, len(user_ids), 10):
-                    # Kiểm tra stop flag trước khi fetch
                     if running_flag and running_flag.is_set():
                         return
                     batch = user_ids[i:i+10]
@@ -320,14 +307,13 @@ def worker_nhaytag(imei: str, cookies: dict, group_id: str,
                         break
                     logger.error(f"Lỗi nhây tag: {e}")
                 
-                # Check stop flag trước khi sleep
                 if running_flag and running_flag.is_set():
                     break
                 time.sleep(delay)
     except Exception as e:
         logger.error(f"Worker nhaytag lỗi: {e}")
 
-# ===== LOGIN TEMPLATE =====
+# ===== HTML LOGIN TEMPLATE =====
 LOGIN_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="vi">
@@ -352,7 +338,6 @@ LOGIN_TEMPLATE = """
             overflow: hidden;
         }
 
-        /* ===== BACKGROUND 3D ANIMATION ===== */
         .bg-3d {
             position: fixed;
             top: 0;
@@ -373,53 +358,6 @@ LOGIN_TEMPLATE = """
             100% { background-position: 0% 0%; }
         }
 
-        /* ===== WAVES ===== */
-        .waves {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 200px;
-            z-index: 0;
-            overflow: hidden;
-        }
-
-        .wave {
-            position: absolute;
-            bottom: -10px;
-            left: -50%;
-            width: 200%;
-            height: 200px;
-            background: radial-gradient(ellipse at center, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
-            border-radius: 50%;
-            animation: waveMove 8s ease-in-out infinite;
-        }
-
-        .wave:nth-child(1) {
-            animation-delay: 0s;
-            background: radial-gradient(ellipse at center, rgba(102, 126, 234, 0.12) 0%, transparent 70%);
-        }
-        .wave:nth-child(2) {
-            animation-delay: -2s;
-            background: radial-gradient(ellipse at center, rgba(118, 75, 162, 0.12) 0%, transparent 70%);
-            height: 150px;
-            bottom: -5px;
-        }
-        .wave:nth-child(3) {
-            animation-delay: -4s;
-            background: radial-gradient(ellipse at center, rgba(102, 126, 234, 0.08) 0%, transparent 70%);
-            height: 100px;
-            bottom: 0px;
-        }
-
-        @keyframes waveMove {
-            0%, 100% { transform: translateX(0) scale(1); }
-            25% { transform: translateX(5%) scale(1.1); }
-            50% { transform: translateX(0) scale(1.2); }
-            75% { transform: translateX(-5%) scale(1.1); }
-        }
-
-        /* ===== FLOATING ORBS ===== */
         .orb {
             position: fixed;
             border-radius: 50%;
@@ -428,35 +366,9 @@ LOGIN_TEMPLATE = """
             z-index: 0;
             animation: orbFloat 20s ease-in-out infinite;
         }
-
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            top: -100px;
-            right: -100px;
-            background: radial-gradient(circle, rgba(102, 126, 234, 0.3), transparent);
-            animation-delay: 0s;
-        }
-
-        .orb-2 {
-            width: 300px;
-            height: 300px;
-            bottom: -50px;
-            left: -50px;
-            background: radial-gradient(circle, rgba(118, 75, 162, 0.3), transparent);
-            animation-delay: -5s;
-        }
-
-        .orb-3 {
-            width: 200px;
-            height: 200px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent);
-            animation-delay: -10s;
-            filter: blur(120px);
-        }
+        .orb-1 { width: 400px; height: 400px; top: -100px; right: -100px; background: radial-gradient(circle, rgba(102, 126, 234, 0.3), transparent); }
+        .orb-2 { width: 300px; height: 300px; bottom: -50px; left: -50px; background: radial-gradient(circle, rgba(118, 75, 162, 0.3), transparent); animation-delay: -5s; }
+        .orb-3 { width: 200px; height: 200px; top: 50%; left: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle, rgba(255,255,255,0.05), transparent); animation-delay: -10s; filter: blur(120px); }
 
         @keyframes orbFloat {
             0%, 100% { transform: translate(0, 0) scale(1); }
@@ -465,7 +377,6 @@ LOGIN_TEMPLATE = """
             75% { transform: translate(20px, 20px) scale(1.05); }
         }
 
-        /* ===== PARTICLES ===== */
         .particles-container {
             position: fixed;
             width: 100%;
@@ -488,91 +399,24 @@ LOGIN_TEMPLATE = """
         }
 
         @keyframes particleFloat {
-            0% {
-                transform: translateY(100vh) scale(0);
-                opacity: 0;
-            }
-            10% {
-                opacity: 0.8;
-            }
-            90% {
-                opacity: 0.8;
-            }
-            100% {
-                transform: translateY(-10vh) scale(1);
-                opacity: 0;
-            }
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
         }
 
-        /* ===== GLOWING RING ===== */
-        .glow-ring {
-            position: fixed;
-            width: 600px;
-            height: 600px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            border: 1px solid rgba(102, 126, 234, 0.05);
-            z-index: 0;
-            animation: ringRotate 30s linear infinite;
-        }
-
-        .glow-ring::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: 50%;
-            width: 2px;
-            height: 20px;
-            background: linear-gradient(to bottom, rgba(102, 126, 234, 0.5), transparent);
-            transform: translateX(-50%);
-            border-radius: 2px;
-            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
-        }
-
-        @keyframes ringRotate {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-
-        .glow-ring-2 {
-            width: 450px;
-            height: 450px;
-            animation-duration: 20s;
-            animation-direction: reverse;
-            border-color: rgba(118, 75, 162, 0.03);
-        }
-
-        .glow-ring-2::before {
-            background: linear-gradient(to bottom, rgba(118, 75, 162, 0.5), transparent);
-            box-shadow: 0 0 20px rgba(118, 75, 162, 0.3);
-        }
-
-        /* ===== LOGIN CARD ===== */
         .login-card {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 30px;
-            padding: 50px 45px;
+            padding: 45px 40px;
             max-width: 450px;
             width: 100%;
-            box-shadow: 
-                0 30px 80px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
             position: relative;
             z-index: 1;
             animation: slideUp 0.8s ease-out;
-            transition: all 0.3s;
-        }
-
-        .login-card:hover {
-            box-shadow: 
-                0 40px 100px rgba(0, 0, 0, 0.6),
-                inset 0 1px 0 rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.12);
         }
 
         @keyframes slideUp {
@@ -582,42 +426,22 @@ LOGIN_TEMPLATE = """
 
         .login-card .logo {
             text-align: center;
-            margin-bottom: 35px;
+            margin-bottom: 30px;
         }
 
         .login-card .logo .logo-icon {
-            width: 85px;
-            height: 85px;
+            width: 80px;
+            height: 80px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             border-radius: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 18px;
-            font-size: 42px;
+            margin: 0 auto 15px;
+            font-size: 40px;
             color: white;
             box-shadow: 0 20px 50px rgba(102, 126, 234, 0.3);
             animation: pulseLogo 2.5s ease-in-out infinite;
-            position: relative;
-            transition: all 0.3s;
-        }
-
-        .login-card .logo .logo-icon::after {
-            content: '';
-            position: absolute;
-            inset: -3px;
-            border-radius: 27px;
-            background: linear-gradient(135deg, #667eea, #764ba2, #667eea);
-            background-size: 300% 300%;
-            z-index: -1;
-            opacity: 0.3;
-            animation: gradientRotate 3s ease-in-out infinite;
-            filter: blur(15px);
-        }
-
-        @keyframes gradientRotate {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
         }
 
         @keyframes pulseLogo {
@@ -628,12 +452,11 @@ LOGIN_TEMPLATE = """
         .login-card .logo h3 {
             font-family: 'Orbitron', monospace;
             font-weight: 900;
-            font-size: 26px;
+            font-size: 24px;
             background: linear-gradient(135deg, #fff, #a78bfa, #667eea);
             background-size: 200% 200%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: none;
             margin: 0;
             animation: textGradient 4s ease-in-out infinite;
         }
@@ -645,9 +468,9 @@ LOGIN_TEMPLATE = """
 
         .login-card .logo .subtitle {
             color: rgba(255, 255, 255, 0.4);
-            font-size: 13px;
+            font-size: 12px;
             letter-spacing: 3px;
-            margin-top: 8px;
+            margin-top: 5px;
             text-transform: uppercase;
         }
 
@@ -660,59 +483,11 @@ LOGIN_TEMPLATE = """
             animation: blink 1.5s ease-in-out infinite;
             margin-right: 6px;
             vertical-align: middle;
-            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
         }
 
         @keyframes blink {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.3; transform: scale(0.8); }
-        }
-
-        .login-card .tab-header {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 16px;
-            padding: 5px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .login-card .tab-header .tab-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: transparent;
-            color: rgba(255, 255, 255, 0.4);
-            font-weight: 600;
-            font-size: 14px;
-            border-radius: 12px;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-
-        .login-card .tab-header .tab-btn:hover {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .login-card .tab-header .tab-btn.active {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
-            color: #fff;
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.1);
-        }
-
-        .login-card .tab-content {
-            display: none;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .login-card .tab-content.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            0% { opacity: 0; transform: translateY(10px); }
-            100% { opacity: 1; transform: translateY(0); }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
 
         .form-control {
@@ -722,7 +497,6 @@ LOGIN_TEMPLATE = """
             padding: 13px 18px;
             color: #fff;
             transition: all 0.3s;
-            font-size: 14px;
         }
 
         .form-control:focus {
@@ -773,10 +547,7 @@ LOGIN_TEMPLATE = """
             font-weight: 700;
             width: 100%;
             transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
             font-size: 15px;
-            letter-spacing: 0.5px;
         }
 
         .btn-login:hover {
@@ -785,28 +556,9 @@ LOGIN_TEMPLATE = """
             color: white;
         }
 
-        .btn-login:active {
-            transform: translateY(0);
-        }
-
         .btn-login:disabled {
             opacity: 0.7;
             transform: none;
-        }
-
-        .btn-login::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            transition: 0.5s;
-        }
-
-        .btn-login:hover::before {
-            left: 100%;
         }
 
         .switch-link {
@@ -821,26 +573,10 @@ LOGIN_TEMPLATE = """
             text-decoration: none;
             font-weight: 600;
             transition: 0.3s;
-            position: relative;
-        }
-
-        .switch-link a::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #667eea, #a78bfa);
-            transition: 0.3s;
         }
 
         .switch-link a:hover {
             color: #fff;
-        }
-
-        .switch-link a:hover::after {
-            width: 100%;
         }
 
         .alert {
@@ -852,15 +588,8 @@ LOGIN_TEMPLATE = """
             font-size: 13px;
         }
 
-        .alert-success {
-            border-color: rgba(40, 167, 69, 0.2);
-            color: #28a745;
-        }
-
-        .alert-danger {
-            border-color: rgba(220, 53, 69, 0.2);
-            color: #dc3545;
-        }
+        .alert-success { border-color: rgba(40, 167, 69, 0.2); color: #28a745; }
+        .alert-danger { border-color: rgba(220, 53, 69, 0.2); color: #dc3545; }
 
         .footer-text {
             text-align: center;
@@ -887,82 +616,82 @@ LOGIN_TEMPLATE = """
             border-width: 0.15em;
         }
 
-        /* ===== RESPONSIVE ===== */
+        .tab-header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-header .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 12px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .tab-header .tab-btn:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .tab-header .tab-btn.active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            color: #fff;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
         @media (max-width: 480px) {
-            .login-card {
-                padding: 30px 25px;
-                margin: 15px;
-                border-radius: 20px;
-            }
-
-            .login-card .logo .logo-icon {
-                width: 65px;
-                height: 65px;
-                font-size: 32px;
-            }
-
-            .login-card .logo h3 {
-                font-size: 20px;
-            }
-
-            .login-card .tab-header .tab-btn {
-                font-size: 12px;
-                padding: 8px;
-            }
-
-            .form-control {
-                padding: 11px 14px;
-                font-size: 13px;
-            }
-
-            .btn-login {
-                padding: 13px;
-                font-size: 14px;
-            }
+            .login-card { padding: 30px 25px; margin: 15px; border-radius: 20px; }
+            .login-card .logo .logo-icon { width: 65px; height: 65px; font-size: 32px; }
+            .login-card .logo h3 { font-size: 20px; }
+            .tab-header .tab-btn { font-size: 12px; padding: 8px; }
+            .form-control { padding: 11px 14px; }
+            .btn-login { padding: 13px; font-size: 14px; }
         }
     </style>
 </head>
 <body>
-    <!-- ===== BACKGROUND ===== -->
     <div class="bg-3d"></div>
-    
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
-
-    <div class="glow-ring"></div>
-    <div class="glow-ring glow-ring-2"></div>
-
-    <div class="waves">
-        <div class="wave"></div>
-        <div class="wave"></div>
-        <div class="wave"></div>
-    </div>
-
     <div class="particles-container" id="particles"></div>
 
-    <!-- ===== LOGIN CARD ===== -->
     <div class="login-card">
         <div class="logo">
-            <div class="logo-icon">
-                <i class="fas fa-robot"></i>
-            </div>
+            <div class="logo-icon"><i class="fas fa-robot"></i></div>
             <h3>WEB PNDK TOOL</h3>
-            <div class="subtitle">
-                <span class="status-dot"></span> Hệ thống tự động hóa Zalo
-            </div>
+            <div class="subtitle"><span class="status-dot"></span> Hệ thống tự động hóa Zalo</div>
         </div>
 
         <div class="tab-header">
-            <button class="tab-btn active" onclick="switchTab('login')" id="loginTab">
-                <i class="fas fa-sign-in-alt"></i> Đăng nhập
-            </button>
-            <button class="tab-btn" onclick="switchTab('register')" id="registerTab">
-                <i class="fas fa-user-plus"></i> Đăng ký
-            </button>
+            <button class="tab-btn active" onclick="switchTab('login')" id="loginTab"><i class="fas fa-sign-in-alt"></i> Đăng nhập</button>
+            <button class="tab-btn" onclick="switchTab('register')" id="registerTab"><i class="fas fa-user-plus"></i> Đăng ký</button>
         </div>
 
-        <!-- ===== LOGIN FORM ===== -->
         <div class="tab-content active" id="loginForm">
             <form onsubmit="login(event)">
                 <div class="mb-3">
@@ -974,14 +703,11 @@ LOGIN_TEMPLATE = """
                     <input type="password" class="form-control" id="loginPassword" placeholder="Nhập mật khẩu" required>
                     <span class="toggle-eye" onclick="togglePassword('loginPassword', this)"><i class="fas fa-eye"></i></span>
                 </div>
-                <button type="submit" class="btn btn-login" id="loginBtn">
-                    <i class="fas fa-sign-in-alt"></i> Đăng nhập
-                </button>
+                <button type="submit" class="btn btn-login" id="loginBtn"><i class="fas fa-sign-in-alt"></i> Đăng nhập</button>
             </form>
             <div id="loginStatus" class="mt-3"></div>
         </div>
 
-        <!-- ===== REGISTER FORM ===== -->
         <div class="tab-content" id="registerForm">
             <form onsubmit="register(event)">
                 <div class="mb-3">
@@ -998,24 +724,18 @@ LOGIN_TEMPLATE = """
                     <input type="password" class="form-control" id="registerPassword2" placeholder="Nhập lại mật khẩu" required>
                     <span class="toggle-eye" onclick="togglePassword('registerPassword2', this)"><i class="fas fa-eye"></i></span>
                 </div>
-                <button type="submit" class="btn btn-login" id="registerBtn">
-                    <i class="fas fa-user-plus"></i> Đăng ký
-                </button>
+                <button type="submit" class="btn btn-login" id="registerBtn"><i class="fas fa-user-plus"></i> Đăng ký</button>
             </form>
             <div id="registerStatus" class="mt-3"></div>
         </div>
 
-        <div class="footer-text">
-            <span class="heart">❤</span> Phát triển bởi Phan Nguyễn Đăng Khoa
-        </div>
+        <div class="footer-text"><span class="heart">❤</span> Phát triển bởi Phan Nguyễn Đăng Khoa</div>
     </div>
 
     <script>
-        // ===== PARTICLES =====
         function createParticles() {
             const container = document.getElementById('particles');
             const colors = ['#667eea', '#764ba2', '#a78bfa', '#ffffff', '#4facfe'];
-            
             for (let i = 0; i < 50; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
@@ -1033,7 +753,6 @@ LOGIN_TEMPLATE = """
         }
         createParticles();
 
-        // ===== TOGGLE PASSWORD =====
         function togglePassword(inputId, eye) {
             const input = document.getElementById(inputId);
             if (input.type === 'password') {
@@ -1045,7 +764,6 @@ LOGIN_TEMPLATE = """
             }
         }
 
-        // ===== SWITCH TAB =====
         function switchTab(tab) {
             const loginForm = document.getElementById('loginForm');
             const registerForm = document.getElementById('registerForm');
@@ -1065,7 +783,6 @@ LOGIN_TEMPLATE = """
             }
         }
 
-        // ===== LOGIN =====
         function login(e) {
             e.preventDefault();
             const username = document.getElementById('loginUsername').value.trim();
@@ -1105,7 +822,6 @@ LOGIN_TEMPLATE = """
             });
         }
 
-        // ===== REGISTER =====
         function register(e) {
             e.preventDefault();
             const username = document.getElementById('registerUsername').value.trim();
@@ -1158,462 +874,11 @@ LOGIN_TEMPLATE = """
             });
         }
     </script>
-
-    <!-- ===== FLOATING MUSIC PLAYER - TIKTOK SUPPORT ===== -->
-    <style>
-        #musicPlayer {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            z-index: 9999;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 50px;
-            padding: 10px 18px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
-            transition: all 0.3s ease;
-            font-family: 'Segoe UI', sans-serif;
-            max-width: 350px;
-        }
-        #musicPlayer:hover {
-            background: rgba(0, 0, 0, 0.85);
-            border-color: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.8);
-        }
-        #playBtn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-            color: #fff;
-            font-size: 18px;
-            cursor: pointer;
-            outline: none;
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: 0.3s;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            flex-shrink: 0;
-        }
-        #playBtn:hover {
-            transform: scale(1.12);
-            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
-        }
-        #volumeSlider {
-            width: 65px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            -webkit-appearance: none;
-            appearance: none;
-            outline: none;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        #volumeSlider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid #fff;
-            box-shadow: 0 0 15px rgba(102, 126, 234, 0.4);
-        }
-        #volumeSlider::-moz-range-thumb {
-            width: 14px;
-            height: 14px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid #fff;
-        }
-        .music-info {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 11px;
-            display: flex;
-            flex-direction: column;
-            line-height: 1.3;
-            min-width: 0;
-            flex: 1;
-        }
-        .music-info .song-name {
-            color: #fff;
-            font-weight: 600;
-            font-size: 12px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .music-info .song-artist {
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.4);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .music-info .status-dot {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #28a745;
-            margin-right: 5px;
-            animation: pulse-dot 1.2s ease-in-out infinite;
-            vertical-align: middle;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.7); }
-        }
-        #nextBtn {
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
-            padding: 5px;
-            flex-shrink: 0;
-        }
-        #nextBtn:hover {
-            color: #fff;
-            transform: rotate(30deg);
-        }
-        #sourceTag {
-            font-size: 8px;
-            background: rgba(255,255,255,0.1);
-            padding: 2px 6px;
-            border-radius: 10px;
-            color: rgba(255,255,255,0.3);
-            margin-left: 4px;
-            flex-shrink: 0;
-        }
-        @media (max-width: 480px) {
-            #musicPlayer {
-                padding: 8px 12px;
-                gap: 10px;
-                bottom: 15px;
-                right: 15px;
-                max-width: 220px;
-            }
-            #volumeSlider {
-                width: 40px;
-            }
-            #playBtn {
-                width: 32px;
-                height: 32px;
-                font-size: 15px;
-            }
-            .music-info .song-name {
-                font-size: 10px;
-            }
-            .music-info .song-artist {
-                font-size: 9px;
-            }
-            #nextBtn {
-                font-size: 13px;
-            }
-            #sourceTag {
-                font-size: 7px;
-                padding: 1px 4px;
-            }
-        }
-    </style>
-
-    <div id="musicPlayer">
-        <button id="playBtn" title="Bật/Tắt nhạc">
-            <i class="fas fa-play"></i>
-        </button>
-        <div class="music-info">
-            <div class="song-name" id="songName">🎵 Đang tải...</div>
-            <div class="song-artist" id="songArtist">
-                <span class="status-dot"></span> Nhạc nền
-            </div>
-        </div>
-        <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.3">
-        <button id="nextBtn" title="Bài tiếp theo">
-            <i class="fas fa-step-forward"></i>
-        </button>
-        <span id="sourceTag">🎵</span>
-        <audio id="bgMusic" preload="auto"></audio>
-    </div>
-
-    <script>
-        (function() {
-            // ===== DANH SÁCH NHẠC (Hỗ trợ TikTok) =====
-            const PLAYLIST = [
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cxjhYc/',
-                    name: 'Nhạc TikTok 1', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cxecTW/',
-                    name: 'Nhạc TikTok 2', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cxe7Sv/',
-                    name: 'Nhạc TikTok 3', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cxSb5v/',
-                    name: 'Nhạc TikTok 4', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cxrDPM/',
-                    name: 'Nhạc TikTok 5', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cxrpsX/',
-                    name: 'Nhạc TikTok 6', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cx5Wbx/',
-                    name: 'Nhạc TikTok 7', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cx5Xtf/',
-                    name: 'Nhạc TikTok 8', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                // Fallback MP3 (nếu TikTok không load được)
-                { 
-                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-                    name: 'Nhạc Dự Phòng 1', 
-                    artist: 'SoundHelix',
-                    type: 'mp3'
-                },
-                { 
-                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-                    name: 'Nhạc Dự Phòng 2', 
-                    artist: 'SoundHelix',
-                    type: 'mp3'
-                }
-            ];
-
-            const audio = document.getElementById('bgMusic');
-            const playBtn = document.getElementById('playBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            const volumeSlider = document.getElementById('volumeSlider');
-            const songName = document.getElementById('songName');
-            const songArtist = document.getElementById('songArtist');
-            const sourceTag = document.getElementById('sourceTag');
-
-            let currentIndex = 0;
-            let currentIframe = null;
-            let isTikTokMode = false;
-
-            // ===== HÀM TẠO IF TIKTOK =====
-            function createTikTokIframe(url) {
-                if (currentIframe) {
-                    currentIframe.remove();
-                    currentIframe = null;
-                }
-
-                const iframe = document.createElement('iframe');
-                iframe.style.cssText = 'position:absolute; top:-9999px; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;';
-                iframe.allow = 'autoplay; encrypted-media;';
-                
-                let embedUrl = url;
-                if (url.includes('vt.tiktok.com') || url.includes('tiktok.com')) {
-                    embedUrl = url;
-                }
-                
-                iframe.src = embedUrl;
-                iframe.id = 'tiktokAudioPlayer';
-                document.body.appendChild(iframe);
-                currentIframe = iframe;
-                
-                return iframe;
-            }
-
-            // ===== HÀM PHÁT BÀI HÁT =====
-            function playSong(index) {
-                const song = PLAYLIST[index];
-                if (!song) return;
-                
-                songName.textContent = `🎵 ${song.name}`;
-                songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
-                sourceTag.textContent = song.type === 'tiktok' ? '🎵 TIKTOK' : '🎵 MP3';
-                
-                isTikTokMode = song.type === 'tiktok';
-                
-                if (isTikTokMode) {
-                    try {
-                        createTikTokIframe(song.url);
-                        setTimeout(() => {
-                            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                        }, 2000);
-                    } catch(e) {
-                        console.warn('Lỗi load TikTok, chuyển sang MP3:', e);
-                        isTikTokMode = false;
-                        playMp3(song.url);
-                    }
-                } else {
-                    playMp3(song.url);
-                }
-                
-                currentIndex = index;
-                try {
-                    localStorage.setItem('currentSongIndex', index);
-                    localStorage.setItem('currentSongType', song.type);
-                } catch(e) {}
-            }
-
-            // ===== HÀM PHÁT MP3 =====
-            function playMp3(url) {
-                if (currentIframe) {
-                    currentIframe.remove();
-                    currentIframe = null;
-                }
-                
-                audio.src = url;
-                audio.load();
-                
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                    }).catch(() => {
-                        playBtn.innerHTML = '<i class="fas fa-play"></i>';
-                        songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">🔊 Nhấn Play để nghe</span>`;
-                    });
-                }
-            }
-
-            // ===== HÀM PHÁT NGẪU NHIÊN =====
-            function getRandomSong() {
-                return Math.floor(Math.random() * PLAYLIST.length);
-            }
-
-            function playRandomSong() {
-                playSong(getRandomSong());
-            }
-
-            function nextSong() {
-                let newIndex;
-                do {
-                    newIndex = getRandomSong();
-                } while (newIndex === currentIndex && PLAYLIST.length > 1);
-                playSong(newIndex);
-            }
-
-            // ===== ĐIỀU KHIỂN =====
-            volumeSlider.addEventListener('input', function() {
-                audio.volume = parseFloat(this.value);
-                localStorage.setItem('musicVolume', audio.volume);
-            });
-
-            playBtn.addEventListener('click', function() {
-                if (isTikTokMode) {
-                    if (currentIframe) {
-                        const src = currentIframe.src;
-                        if (this.innerHTML.includes('pause')) {
-                            currentIframe.src = 'about:blank';
-                            this.innerHTML = '<i class="fas fa-play"></i>';
-                            songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
-                        } else {
-                            currentIframe.src = src;
-                            this.innerHTML = '<i class="fas fa-pause"></i>';
-                            const song = PLAYLIST[currentIndex];
-                            if (song) {
-                                songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
-                            }
-                        }
-                    }
-                } else {
-                    if (audio.paused) {
-                        audio.play().then(() => {
-                            this.innerHTML = '<i class="fas fa-pause"></i>';
-                            const song = PLAYLIST[currentIndex];
-                            if (song) {
-                                songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
-                            }
-                        }).catch(e => console.warn('Lỗi phát nhạc:', e));
-                    } else {
-                        audio.pause();
-                        this.innerHTML = '<i class="fas fa-play"></i>';
-                        songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
-                    }
-                }
-            });
-
-            nextBtn.addEventListener('click', function() {
-                nextSong();
-            });
-
-            audio.addEventListener('ended', function() {
-                if (!isTikTokMode) {
-                    nextSong();
-                }
-            });
-
-            // ===== KHỞI TẠO =====
-            function init() {
-                let savedIndex = null;
-                try {
-                    const saved = localStorage.getItem('currentSongIndex');
-                    if (saved !== null) {
-                        const idx = parseInt(saved);
-                        if (idx >= 0 && idx < PLAYLIST.length) {
-                            savedIndex = idx;
-                        }
-                    }
-                } catch(e) {}
-                
-                if (savedIndex === null) {
-                    playRandomSong();
-                } else {
-                    playSong(savedIndex);
-                }
-                
-                const savedVolume = localStorage.getItem('musicVolume');
-                if (savedVolume !== null) {
-                    const vol = parseFloat(savedVolume);
-                    if (!isNaN(vol) && vol >= 0 && vol <= 1) {
-                        audio.volume = vol;
-                        volumeSlider.value = vol;
-                    }
-                }
-            }
-
-            if (document.readyState === 'complete') {
-                setTimeout(init, 500);
-            } else {
-                window.addEventListener('load', function() {
-                    setTimeout(init, 500);
-                });
-            }
-        })();
-    </script>
 </body>
 </html>
 """
 
-# ===== HTML TEMPLATE =====
+# ===== HTML MAIN TEMPLATE (Đã có nhạc nền) =====
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="vi">
@@ -1625,14 +890,7 @@ HTML_TEMPLATE = """
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #667eea;
-            --secondary: #764ba2;
-            --danger: #dc3545;
-            --success: #28a745;
-            --warning: #ffc107;
-        }
-        
+        :root { --primary: #667eea; --secondary: #764ba2; --danger: #dc3545; --success: #28a745; --warning: #ffc107; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body { 
@@ -1664,12 +922,7 @@ HTML_TEMPLATE = """
             100% { transform: rotate(360deg); }
         }
         
-        .container-custom { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            position: relative;
-            z-index: 1;
-        }
+        .container-custom { max-width: 1400px; margin: 0 auto; position: relative; z-index: 1; }
         
         .header-main {
             background: rgba(255,255,255,0.05);
@@ -1755,10 +1008,7 @@ HTML_TEMPLATE = """
             gap: 8px;
             color: rgba(255,255,255,0.6);
         }
-        
-        .info-badge i {
-            color: var(--primary);
-        }
+        .info-badge i { color: var(--primary); }
         
         .status-dot {
             display: inline-block;
@@ -1791,15 +1041,8 @@ HTML_TEMPLATE = """
             gap: 12px;
             color: rgba(255,255,255,0.7);
         }
-        
-        .user-header .user-info i {
-            font-size: 22px;
-            color: var(--primary);
-        }
-        
-        .user-header .user-info strong {
-            color: #fff;
-        }
+        .user-header .user-info i { font-size: 22px; color: var(--primary); }
+        .user-header .user-info strong { color: #fff; }
         
         .btn-logout {
             background: rgba(255,255,255,0.08);
@@ -1811,12 +1054,7 @@ HTML_TEMPLATE = """
             cursor: pointer;
             font-size: 13px;
         }
-        
-        .btn-logout:hover {
-            background: rgba(220,53,69,0.2);
-            border-color: rgba(220,53,69,0.3);
-            color: #dc3545;
-        }
+        .btn-logout:hover { background: rgba(220,53,69,0.2); border-color: rgba(220,53,69,0.3); color: #dc3545; }
         
         .stats-grid {
             display: grid;
@@ -1841,34 +1079,10 @@ HTML_TEMPLATE = """
             transition: all 0.4s;
             cursor: default;
         }
-        
-        .stat-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            background: rgba(255,255,255,0.08);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
-        }
-        
-        .stat-card .stat-icon {
-            font-size: 24px;
-            margin-bottom: 5px;
-            display: block;
-        }
-        
-        .stat-card .stat-number {
-            font-size: 30px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #fff, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .stat-card .stat-label {
-            font-size: 12px;
-            color: rgba(255,255,255,0.4);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 2px;
-        }
+        .stat-card:hover { transform: translateY(-5px) scale(1.02); background: rgba(255,255,255,0.08); box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
+        .stat-card .stat-icon { font-size: 24px; margin-bottom: 5px; display: block; }
+        .stat-card .stat-number { font-size: 30px; font-weight: 700; background: linear-gradient(135deg, #fff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-card .stat-label { font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
         
         .main-card {
             background: rgba(255,255,255,0.04);
@@ -1895,21 +1109,9 @@ HTML_TEMPLATE = """
             transition: all 0.3s;
             font-size: 14px;
         }
-        
-        .main-card .card-header-custom .nav-link:hover {
-            color: #fff;
-            background: rgba(255,255,255,0.05);
-        }
-        
-        .main-card .card-header-custom .nav-link.active {
-            color: #fff;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            box-shadow: 0 10px 30px rgba(102,126,234,0.25);
-        }
-        
-        .main-card .card-body {
-            padding: 25px;
-        }
+        .main-card .card-header-custom .nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .main-card .card-header-custom .nav-link.active { color: #fff; background: linear-gradient(135deg, var(--primary), var(--secondary)); box-shadow: 0 10px 30px rgba(102,126,234,0.25); }
+        .main-card .card-body { padding: 25px; }
         
         .footer-main {
             margin-top: 25px;
@@ -1922,27 +1124,10 @@ HTML_TEMPLATE = """
             font-size: 12px;
             animation: fadeInUp 1.2s ease-out;
         }
-        
-        .footer-main .heart {
-            color: #ff4757;
-            animation: heartBeat 1.5s ease-in-out infinite;
-            display: inline-block;
-        }
-        
-        @keyframes heartBeat {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-        }
-        
-        .footer-main a {
-            color: rgba(255,255,255,0.4);
-            text-decoration: none;
-            transition: 0.3s;
-        }
-        
-        .footer-main a:hover {
-            color: #a78bfa;
-        }
+        .footer-main .heart { color: #ff4757; animation: heartBeat 1.5s ease-in-out infinite; display: inline-block; }
+        @keyframes heartBeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        .footer-main a { color: rgba(255,255,255,0.4); text-decoration: none; transition: 0.3s; }
+        .footer-main a:hover { color: #a78bfa; }
         
         .box-item {
             background: rgba(255,255,255,0.04);
@@ -1957,23 +1142,9 @@ HTML_TEMPLATE = """
             align-items: center;
             color: rgba(255,255,255,0.7);
         }
-        
-        .box-item:hover {
-            background: rgba(255,255,255,0.08);
-            border-color: var(--primary);
-            transform: translateX(5px);
-        }
-        
-        .box-item.selected {
-            background: rgba(102,126,234,0.15);
-            border-color: var(--primary);
-            box-shadow: 0 0 20px rgba(102,126,234,0.1);
-        }
-        
-        .box-item .box-check {
-            color: var(--success);
-            font-size: 16px;
-        }
+        .box-item:hover { background: rgba(255,255,255,0.08); border-color: var(--primary); transform: translateX(5px); }
+        .box-item.selected { background: rgba(102,126,234,0.15); border-color: var(--primary); box-shadow: 0 0 20px rgba(102,126,234,0.1); }
+        .box-item .box-check { color: var(--success); font-size: 16px; }
         
         .account-item {
             background: rgba(255,255,255,0.04);
@@ -1987,32 +1158,11 @@ HTML_TEMPLATE = """
             transition: all 0.3s;
             color: rgba(255,255,255,0.7);
         }
-        
-        .account-item:hover {
-            background: rgba(255,255,255,0.06);
-        }
-        
-        .account-item .account-name {
-            font-weight: 600;
-            color: #a78bfa;
-        }
-        
-        .account-status {
-            padding: 2px 10px;
-            border-radius: 50px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-        
-        .account-status.active {
-            background: rgba(40,167,69,0.2);
-            color: #28a745;
-        }
-        
-        .account-status.inactive {
-            background: rgba(220,53,69,0.2);
-            color: #dc3545;
-        }
+        .account-item:hover { background: rgba(255,255,255,0.06); }
+        .account-item .account-name { font-weight: 600; color: #a78bfa; }
+        .account-status { padding: 2px 10px; border-radius: 50px; font-size: 10px; font-weight: 600; }
+        .account-status.active { background: rgba(40,167,69,0.2); color: #28a745; }
+        .account-status.inactive { background: rgba(220,53,69,0.2); color: #dc3545; }
         
         .task-item {
             background: rgba(255,255,255,0.04);
@@ -2022,40 +1172,11 @@ HTML_TEMPLATE = """
             margin-bottom: 8px;
             transition: all 0.3s;
         }
-        
-        .task-item:hover {
-            background: rgba(255,255,255,0.06);
-            border-color: rgba(255,255,255,0.08);
-        }
-        
-        .task-item .task-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-        }
-        
-        .task-progress {
-            height: 4px;
-            background: rgba(255,255,255,0.06);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-        
-        .task-progress .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            transition: width 0.5s;
-        }
-        
-        .task-status {
-            padding: 2px 10px;
-            border-radius: 50px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-        
+        .task-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.08); }
+        .task-item .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .task-progress { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+        .task-progress .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.5s; }
+        .task-status { padding: 2px 10px; border-radius: 50px; font-size: 10px; font-weight: 600; }
         .task-status.running { background: rgba(40,167,69,0.2); color: #28a745; }
         .task-status.done { background: rgba(102,126,234,0.2); color: #667eea; }
         .task-status.error { background: rgba(220,53,69,0.2); color: #dc3545; }
@@ -2076,232 +1197,48 @@ HTML_TEMPLATE = """
             color: rgba(255,255,255,0.6);
             font-size: 13px;
         }
+        .member-item:hover { background: rgba(255,255,255,0.08); }
+        .member-item.selected { background: rgba(102,126,234,0.12); border-color: var(--primary); }
         
-        .member-item:hover {
-            background: rgba(255,255,255,0.08);
-        }
+        .btn-primary-custom { background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; color: #fff; padding: 10px 22px; border-radius: 12px; font-weight: 600; transition: all 0.3s; box-shadow: 0 10px 30px rgba(102,126,234,0.2); }
+        .btn-primary-custom:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(102,126,234,0.3); color: #fff; }
+        .btn-success-custom { background: linear-gradient(135deg, #28a745, #20c997); border: none; color: #fff; padding: 10px 22px; border-radius: 12px; font-weight: 600; transition: all 0.3s; }
+        .btn-success-custom:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(40,167,69,0.25); color: #fff; }
+        .btn-danger-custom { background: linear-gradient(135deg, #dc3545, #c82333); border: none; color: #fff; padding: 10px 22px; border-radius: 12px; font-weight: 600; transition: all 0.3s; }
+        .btn-danger-custom:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(220,53,69,0.25); color: #fff; }
+        .btn-warning-custom { background: linear-gradient(135deg, #ffc107, #f7b503); border: none; color: #333; padding: 10px 22px; border-radius: 12px; font-weight: 600; transition: all 0.3s; }
+        .btn-warning-custom:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(255,193,7,0.25); color: #333; }
         
-        .member-item.selected {
-            background: rgba(102,126,234,0.12);
-            border-color: var(--primary);
-        }
+        .form-control { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.06); color: #fff; border-radius: 10px; padding: 10px 15px; }
+        .form-control:focus { background: rgba(255,255,255,0.08); border-color: var(--primary); color: #fff; box-shadow: 0 0 0 3px rgba(102,126,234,0.15); }
+        .form-control::placeholder { color: rgba(255,255,255,0.2); }
+        .form-label { color: rgba(255,255,255,0.5); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .form-check-label { color: rgba(255,255,255,0.5); font-size: 13px; }
+        .form-check-input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+        .form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
         
-        .btn-primary-custom {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            color: #fff;
-            padding: 10px 22px;
-            border-radius: 12px;
-            font-weight: 600;
-            transition: all 0.3s;
-            box-shadow: 0 10px 30px rgba(102,126,234,0.2);
-        }
+        .alert { border-radius: 12px; border: none; background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); }
+        .alert-info { background: rgba(102,126,234,0.1); color: #a78bfa; border: 1px solid rgba(102,126,234,0.1); }
+        .alert-success { background: rgba(40,167,69,0.1); color: #28a745; border: 1px solid rgba(40,167,69,0.1); }
+        .alert-danger { background: rgba(220,53,69,0.1); color: #dc3545; border: 1px solid rgba(220,53,69,0.1); }
         
-        .btn-primary-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 40px rgba(102,126,234,0.3);
-            color: #fff;
-        }
+        .list-container::-webkit-scrollbar { width: 4px; }
+        .list-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 2px; }
+        .list-container::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 2px; }
+        .list-container { max-height: 400px; overflow-y: auto; padding-right: 5px; }
+        .member-list { max-height: 300px; overflow-y: auto; }
         
-        .btn-success-custom {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            border: none;
-            color: #fff;
-            padding: 10px 22px;
-            border-radius: 12px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
+        .empty-state { text-align: center; padding: 30px 20px; color: rgba(255,255,255,0.2); }
+        .empty-state i { font-size: 40px; display: block; margin-bottom: 10px; }
+        .empty-state p { font-size: 14px; }
+        .empty-state small { color: rgba(255,255,255,0.15); }
         
-        .btn-success-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 40px rgba(40,167,69,0.25);
-            color: #fff;
-        }
+        .file-upload-area { border: 2px dashed rgba(255,255,255,0.08); padding: 15px; text-align: center; border-radius: 12px; cursor: pointer; transition: all 0.3s; color: rgba(255,255,255,0.3); }
+        .file-upload-area:hover { border-color: var(--primary); background: rgba(255,255,255,0.03); }
         
-        .btn-danger-custom {
-            background: linear-gradient(135deg, #dc3545, #c82333);
-            border: none;
-            color: #fff;
-            padding: 10px 22px;
-            border-radius: 12px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        
-        .btn-danger-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 40px rgba(220,53,69,0.25);
-            color: #fff;
-        }
-        
-        .btn-warning-custom {
-            background: linear-gradient(135deg, #ffc107, #f7b503);
-            border: none;
-            color: #333;
-            padding: 10px 22px;
-            border-radius: 12px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        
-        .btn-warning-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 40px rgba(255,193,7,0.25);
-            color: #333;
-        }
-        
-        .form-control {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.06);
-            color: #fff;
-            border-radius: 10px;
-            padding: 10px 15px;
-        }
-        
-        .form-control:focus {
-            background: rgba(255,255,255,0.08);
-            border-color: var(--primary);
-            color: #fff;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
-        }
-        
-        .form-control::placeholder {
-            color: rgba(255,255,255,0.2);
-        }
-        
-        .form-label {
-            color: rgba(255,255,255,0.5);
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .form-check-label {
-            color: rgba(255,255,255,0.5);
-            font-size: 13px;
-        }
-        
-        .form-check-input {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .form-check-input:checked {
-            background-color: var(--primary);
-            border-color: var(--primary);
-        }
-        
-        .alert {
-            border-radius: 12px;
-            border: none;
-            background: rgba(255,255,255,0.05);
-            color: rgba(255,255,255,0.7);
-        }
-        
-        .alert-info {
-            background: rgba(102,126,234,0.1);
-            color: #a78bfa;
-            border: 1px solid rgba(102,126,234,0.1);
-        }
-        
-        .alert-success {
-            background: rgba(40,167,69,0.1);
-            color: #28a745;
-            border: 1px solid rgba(40,167,69,0.1);
-        }
-        
-        .alert-danger {
-            background: rgba(220,53,69,0.1);
-            color: #dc3545;
-            border: 1px solid rgba(220,53,69,0.1);
-        }
-        
-        .list-container::-webkit-scrollbar {
-            width: 4px;
-        }
-        
-        .list-container::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.02);
-            border-radius: 2px;
-        }
-        
-        .list-container::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 2px;
-        }
-        
-        .list-container {
-            max-height: 400px;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-        
-        .member-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 30px 20px;
-            color: rgba(255,255,255,0.2);
-        }
-        
-        .empty-state i {
-            font-size: 40px;
-            display: block;
-            margin-bottom: 10px;
-        }
-        
-        .empty-state p {
-            font-size: 14px;
-        }
-        
-        .empty-state small {
-            color: rgba(255,255,255,0.15);
-        }
-        
-        .file-upload-area {
-            border: 2px dashed rgba(255,255,255,0.08);
-            padding: 15px;
-            text-align: center;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-            color: rgba(255,255,255,0.3);
-        }
-        
-        .file-upload-area:hover {
-            border-color: var(--primary);
-            background: rgba(255,255,255,0.03);
-        }
-        
-        .color-picker {
-            width: 50px;
-            height: 36px;
-            padding: 2px;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            cursor: pointer;
-            background: transparent;
-        }
-        
-        .spinner-small {
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(255,255,255,0.1);
-            border-top: 2px solid #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .color-picker { width: 50px; height: 36px; padding: 2px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; background: transparent; }
+        .spinner-small { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.1); border-top: 2px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         @media (max-width: 768px) {
             .brand-title { font-size: 16px; }
@@ -2312,47 +1249,104 @@ HTML_TEMPLATE = """
             .main-card .card-body { padding: 15px; }
             .user-header { flex-wrap: wrap; gap: 10px; }
         }
-        
         @media (max-width: 480px) {
             .stats-grid { grid-template-columns: 1fr; }
             .header-main .content { flex-direction: column; text-align: center; }
             .logo-area { flex-direction: column; }
         }
+        
+        /* ===== MUSIC PLAYER ===== */
+        #musicPlayer {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 50px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
+            transition: all 0.3s ease;
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 380px;
+        }
+        #musicPlayer:hover { background: rgba(0, 0, 0, 0.9); border-color: rgba(255, 255, 255, 0.15); }
+        #playBtn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: 0.3s;
+            flex-shrink: 0;
+        }
+        #playBtn:hover { transform: scale(1.1); }
+        #volumeSlider {
+            width: 60px;
+            height: 3px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        #volumeSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #fff;
+        }
+        .music-info { color: rgba(255,255,255,0.5); font-size: 10px; display: flex; flex-direction: column; line-height: 1.2; min-width: 0; flex: 1; }
+        .music-info .song-name { color: #fff; font-weight: 600; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .music-info .song-artist { font-size: 9px; color: rgba(255,255,255,0.3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #nextBtn { background: none; border: none; color: rgba(255,255,255,0.3); font-size: 14px; cursor: pointer; transition: 0.3s; padding: 5px; flex-shrink: 0; }
+        #nextBtn:hover { color: #fff; transform: rotate(30deg); }
+        @media (max-width: 480px) {
+            #musicPlayer { padding: 6px 12px; gap: 8px; bottom: 15px; right: 15px; max-width: 200px; }
+            #volumeSlider { width: 35px; }
+            #playBtn { width: 28px; height: 28px; font-size: 13px; }
+            .music-info .song-name { font-size: 9px; }
+            .music-info .song-artist { font-size: 8px; }
+            #nextBtn { font-size: 12px; }
+        }
     </style>
 </head>
 <body>
     <div class="container-custom">
+        <!-- HEADER -->
         <div class="header-main">
             <div class="content">
                 <div class="logo-area">
-                    <div class="logo-icon">
-                        <i class="fas fa-robot"></i>
-                    </div>
+                    <div class="logo-icon"><i class="fas fa-robot"></i></div>
                     <div>
                         <div class="brand-title">WEB PNDK TOOL ĐA APP</div>
-                        <div class="brand-sub">
-                            <span class="status-dot"></span>
-                            Hệ thống tự động hóa Zalo
-                        </div>
+                        <div class="brand-sub"><span class="status-dot"></span> Hệ thống tự động hóa Zalo</div>
                     </div>
                 </div>
                 <div class="header-info">
-                    <div class="info-badge">
-                        <i class="fas fa-user"></i>
-                        <span>Phan Nguyễn Đăng Khoa</span>
-                    </div>
-                    <div class="info-badge">
-                        <i class="fas fa-code"></i>
-                        <span>v3.0</span>
-                    </div>
-                    <div class="info-badge">
-                        <i class="fas fa-clock"></i>
-                        <span id="liveTime">Đang tải...</span>
-                    </div>
+                    <div class="info-badge"><i class="fas fa-user"></i><span>Phan Nguyễn Đăng Khoa</span></div>
+                    <div class="info-badge"><i class="fas fa-code"></i><span>v3.0</span></div>
+                    <div class="info-badge"><i class="fas fa-clock"></i><span id="liveTime">Đang tải...</span></div>
                 </div>
             </div>
         </div>
 
+        <!-- USER HEADER -->
         <div class="user-header">
             <div class="user-info">
                 <i class="fas fa-user-circle"></i>
@@ -2360,95 +1354,45 @@ HTML_TEMPLATE = """
                 <span class="badge bg-success" style="font-size: 10px;"><i class="fas fa-check-circle"></i> Đã đăng nhập</span>
             </div>
             <div>
-                <button class="btn-logout" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
-                </button>
+                <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
             </div>
         </div>
 
+        <!-- STATS -->
         <div class="stats-grid">
-            <div class="stat-card">
-                <span class="stat-icon"><i class="fas fa-users"></i></span>
-                <div class="stat-number" id="accCount">0</div>
-                <div class="stat-label">Tài khoản Zalo</div>
-            </div>
-            <div class="stat-card">
-                <span class="stat-icon"><i class="fas fa-check-circle"></i></span>
-                <div class="stat-number" id="activeCount">0</div>
-                <div class="stat-label">Đang hoạt động</div>
-            </div>
-            <div class="stat-card">
-                <span class="stat-icon"><i class="fas fa-tasks"></i></span>
-                <div class="stat-number" id="taskCount">0</div>
-                <div class="stat-label">Tổng Tasks</div>
-            </div>
-            <div class="stat-card">
-                <span class="stat-icon"><i class="fas fa-play-circle"></i></span>
-                <div class="stat-number" id="runningCount">0</div>
-                <div class="stat-label">Đang chạy</div>
-            </div>
+            <div class="stat-card"><span class="stat-icon"><i class="fas fa-users"></i></span><div class="stat-number" id="accCount">0</div><div class="stat-label">Tài khoản Zalo</div></div>
+            <div class="stat-card"><span class="stat-icon"><i class="fas fa-check-circle"></i></span><div class="stat-number" id="activeCount">0</div><div class="stat-label">Đang hoạt động</div></div>
+            <div class="stat-card"><span class="stat-icon"><i class="fas fa-tasks"></i></span><div class="stat-number" id="taskCount">0</div><div class="stat-label">Tổng Tasks</div></div>
+            <div class="stat-card"><span class="stat-icon"><i class="fas fa-play-circle"></i></span><div class="stat-number" id="runningCount">0</div><div class="stat-label">Đang chạy</div></div>
         </div>
 
+        <!-- MAIN CARD -->
         <div class="main-card">
             <div class="card-header-custom">
                 <ul class="nav nav-tabs" id="myTab" role="tablist" style="border: none; gap: 3px;">
-                    <li class="nav-item">
-                        <button class="nav-link active" id="accounts-tab" data-bs-toggle="tab" data-bs-target="#accounts" type="button" role="tab">
-                            <i class="fas fa-users"></i> Tài khoản
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="treongon-tab" data-bs-toggle="tab" data-bs-target="#treongon" type="button" role="tab">
-                            <i class="fas fa-paper-plane"></i> Treo Ngôn
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="nhaytag-tab" data-bs-toggle="tab" data-bs-target="#nhaytag" type="button" role="tab">
-                            <i class="fas fa-tags"></i> Nhây Tag
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab">
-                            <i class="fas fa-tasks"></i> Quản Lý Task <span class="badge bg-danger" id="taskBadge" style="font-size: 10px;">0</span>
-                        </button>
-                    </li>
+                    <li class="nav-item"><button class="nav-link active" id="accounts-tab" data-bs-toggle="tab" data-bs-target="#accounts" type="button" role="tab"><i class="fas fa-users"></i> Tài khoản</button></li>
+                    <li class="nav-item"><button class="nav-link" id="treongon-tab" data-bs-toggle="tab" data-bs-target="#treongon" type="button" role="tab"><i class="fas fa-paper-plane"></i> Treo Ngôn</button></li>
+                    <li class="nav-item"><button class="nav-link" id="nhaytag-tab" data-bs-toggle="tab" data-bs-target="#nhaytag" type="button" role="tab"><i class="fas fa-tags"></i> Nhây Tag</button></li>
+                    <li class="nav-item"><button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab"><i class="fas fa-tasks"></i> Quản Lý Task <span class="badge bg-danger" id="taskBadge" style="font-size: 10px;">0</span></button></li>
                 </ul>
             </div>
             
             <div class="card-body">
                 <div class="tab-content">
+                    <!-- ACCOUNTS -->
                     <div class="tab-pane fade show active" id="accounts" role="tabpanel">
                         <div class="row">
                             <div class="col-md-5">
                                 <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
-                                        <i class="fas fa-plus-circle"></i> Thêm tài khoản Zalo
-                                    </div>
+                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;"><i class="fas fa-plus-circle"></i> Thêm tài khoản Zalo</div>
                                     <div class="card-body">
-                                        <div class="alert alert-info">
-                                            <i class="fas fa-info-circle"></i> 
-                                            <strong>Định dạng cookies:</strong> {"name":"value","name2":"value2"}
-                                        </div>
+                                        <div class="alert alert-info"><i class="fas fa-info-circle"></i> <strong>Định dạng cookies:</strong> {"name":"value","name2":"value2"}</div>
                                         <form id="addAccountForm" onsubmit="addAccount(event)">
-                                            <div class="mb-3">
-                                                <label class="form-label">Tên tài khoản <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" id="accName" placeholder="VD: Zalo_01" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Cookies <span class="text-danger">*</span></label>
-                                                <textarea class="form-control" id="accCookies" rows="3" placeholder='{"zpsid":"xxx","zpw_sek":"xxx"}' required></textarea>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">IMEI <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" id="accImei" placeholder="Nhập IMEI..." required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Ghi chú</label>
-                                                <input type="text" class="form-control" id="accNote" placeholder="Ghi chú thêm...">
-                                            </div>
-                                            <button type="submit" class="btn btn-success-custom w-100">
-                                                <i class="fas fa-save"></i> Lưu tài khoản
-                                            </button>
+                                            <div class="mb-3"><label class="form-label">Tên tài khoản <span class="text-danger">*</span></label><input type="text" class="form-control" id="accName" placeholder="VD: Zalo_01" required></div>
+                                            <div class="mb-3"><label class="form-label">Cookies <span class="text-danger">*</span></label><textarea class="form-control" id="accCookies" rows="3" placeholder='{"zpsid":"xxx","zpw_sek":"xxx"}' required></textarea></div>
+                                            <div class="mb-3"><label class="form-label">IMEI <span class="text-danger">*</span></label><input type="text" class="form-control" id="accImei" placeholder="Nhập IMEI..." required></div>
+                                            <div class="mb-3"><label class="form-label">Ghi chú</label><input type="text" class="form-control" id="accNote" placeholder="Ghi chú thêm..."></div>
+                                            <button type="submit" class="btn btn-success-custom w-100"><i class="fas fa-save"></i> Lưu tài khoản</button>
                                         </form>
                                         <div id="addAccountStatus" class="mt-2"></div>
                                     </div>
@@ -2456,17 +1400,10 @@ HTML_TEMPLATE = """
                             </div>
                             <div class="col-md-7">
                                 <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
-                                        <i class="fas fa-list"></i> Danh sách tài khoản Zalo
-                                        <span class="badge bg-light text-dark" id="accountListCount" style="float: right; font-size: 11px;">0</span>
-                                    </div>
+                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;"><i class="fas fa-list"></i> Danh sách tài khoản Zalo <span class="badge bg-light text-dark" id="accountListCount" style="float: right; font-size: 11px;">0</span></div>
                                     <div class="card-body">
                                         <div class="list-container" id="accountList">
-                                            <div class="empty-state">
-                                                <i class="fas fa-users"></i>
-                                                <p>Chưa có tài khoản Zalo nào</p>
-                                                <small>Thêm tài khoản Zalo để bắt đầu</small>
-                                            </div>
+                                            <div class="empty-state"><i class="fas fa-users"></i><p>Chưa có tài khoản Zalo nào</p><small>Thêm tài khoản Zalo để bắt đầu</small></div>
                                         </div>
                                     </div>
                                 </div>
@@ -2474,147 +1411,60 @@ HTML_TEMPLATE = """
                         </div>
                     </div>
 
+                    <!-- TREO NGÔN -->
                     <div class="tab-pane fade" id="treongon" role="tabpanel">
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
-                                        <i class="fas fa-comments"></i> Box chat
-                                    </div>
+                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;"><i class="fas fa-comments"></i> Box chat</div>
                                     <div class="card-body">
-                                        <button class="btn btn-primary-custom w-100 mb-3" onclick="refreshBoxes('treongon')">
-                                            <i class="fas fa-sync"></i> Làm mới box chat
-                                        </button>
+                                        <button class="btn btn-primary-custom w-100 mb-3" onclick="refreshBoxes('treongon')"><i class="fas fa-sync"></i> Làm mới box chat</button>
                                         <div id="boxListContainer_treongon" class="list-container">
-                                            <div class="empty-state">
-                                                <i class="fas fa-inbox"></i>
-                                                <p>Chưa có box chat</p>
-                                                <small>Chọn tài khoản Zalo và làm mới</small>
-                                            </div>
+                                            <div class="empty-state"><i class="fas fa-inbox"></i><p>Chưa có box chat</p><small>Chọn tài khoản Zalo và làm mới</small></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-8">
                                 <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
-                                        <i class="fas fa-paper-plane"></i> Treo Ngôn
-                                        <span class="badge bg-light text-dark" id="sessionStatus_treongon" style="float: right; font-size: 11px;">Chưa đăng nhập</span>
-                                    </div>
+                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;"><i class="fas fa-paper-plane"></i> Treo Ngôn <span class="badge bg-light text-dark" id="sessionStatus_treongon" style="float: right; font-size: 11px;">Chưa đăng nhập</span></div>
                                     <div class="card-body">
                                         <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-user"></i> Tài khoản đang dùng</label>
-                                                    <input type="text" class="form-control" id="currentAccountDisplay_treongon" readonly value="Chưa chọn">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-comment"></i> Box đã chọn</label>
-                                                    <input type="text" class="form-control" id="selectedBox_treongon" readonly placeholder="Chọn box">
-                                                </div>
-                                            </div>
+                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-user"></i> Tài khoản đang dùng</label><input type="text" class="form-control" id="currentAccountDisplay_treongon" readonly value="Chưa chọn"></div></div>
+                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-comment"></i> Box đã chọn</label><input type="text" class="form-control" id="selectedBox_treongon" readonly placeholder="Chọn box"></div></div>
                                         </div>
                                         
                                         <div class="row mb-3">
-                                            <div class="col-md-4">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="tagAllCheck" checked>
-                                                    <label class="form-check-label" for="tagAllCheck">Tag All</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="form-label"><i class="fas fa-pencil-alt"></i> Chữ tag</label>
-                                                    <input type="text" class="form-control" id="tagText" value="@All" style="font-size: 13px;">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="form-label"><i class="fas fa-palette"></i> Màu tag</label>
-                                                    <div class="d-flex align-items-center">
-                                                        <input type="color" class="color-picker me-2" id="tagColorPicker" value="#db342e">
-                                                        <input type="text" class="form-control" id="tagColorInput" value="#db342e" style="width:80px; font-size:12px;">
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <div class="col-md-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="tagAllCheck" checked><label class="form-check-label" for="tagAllCheck">Tag All</label></div></div>
+                                            <div class="col-md-4"><div class="form-group"><label class="form-label"><i class="fas fa-pencil-alt"></i> Chữ tag</label><input type="text" class="form-control" id="tagText" value="@All" style="font-size: 13px;"></div></div>
+                                            <div class="col-md-4"><div class="form-group"><label class="form-label"><i class="fas fa-palette"></i> Màu tag</label><div class="d-flex align-items-center"><input type="color" class="color-picker me-2" id="tagColorPicker" value="#db342e"><input type="text" class="form-control" id="tagColorInput" value="#db342e" style="width:80px; font-size:12px;"></div></div></div>
                                         </div>
                                         
                                         <div class="row mb-3">
-                                            <div class="col-md-4">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="colorCheck" checked>
-                                                    <label class="form-check-label" for="colorCheck">Màu nội dung</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="boldCheck" checked>
-                                                    <label class="form-check-label" for="boldCheck">In đậm</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label class="form-label"><i class="fas fa-palette"></i> Màu nội dung</label>
-                                                    <div class="d-flex align-items-center">
-                                                        <input type="color" class="color-picker me-2" id="colorPicker" value="#db342e">
-                                                        <input type="text" class="form-control" id="colorInput" value="#db342e" style="width:80px; font-size:12px;">
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <div class="col-md-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="colorCheck" checked><label class="form-check-label" for="colorCheck">Màu nội dung</label></div></div>
+                                            <div class="col-md-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="boldCheck" checked><label class="form-check-label" for="boldCheck">In đậm</label></div></div>
+                                            <div class="col-md-4"><div class="form-group"><label class="form-label"><i class="fas fa-palette"></i> Màu nội dung</label><div class="d-flex align-items-center"><input type="color" class="color-picker me-2" id="colorPicker" value="#db342e"><input type="text" class="form-control" id="colorInput" value="#db342e" style="width:80px; font-size:12px;"></div></div></div>
                                         </div>
                                         
                                         <div class="row">
-                                            <div class="col-md-3">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-clock"></i> Delay (giây)</label>
-                                                    <input type="number" class="form-control" id="delayInput_treongon" value="2" min="0.5" step="0.5">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-redo"></i> Số lần gửi</label>
-                                                    <input type="number" class="form-control" id="totalInput_treongon" value="1" min="1">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-font"></i> Size chữ</label>
-                                                    <input type="number" class="form-control" id="fontSizeInput" value="15" min="8" max="30">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-layer-group"></i> Màu mỗi dòng</label>
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" id="multiColorCheck">
-                                                        <label class="form-check-label" for="multiColorCheck">Nhiều màu</label>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <div class="col-md-3"><div class="mb-3"><label class="form-label"><i class="fas fa-clock"></i> Delay (giây)</label><input type="number" class="form-control" id="delayInput_treongon" value="2" min="0.5" step="0.5"></div></div>
+                                            <div class="col-md-3"><div class="mb-3"><label class="form-label"><i class="fas fa-redo"></i> Số lần gửi</label><input type="number" class="form-control" id="totalInput_treongon" value="1" min="1"></div></div>
+                                            <div class="col-md-3"><div class="mb-3"><label class="form-label"><i class="fas fa-font"></i> Size chữ</label><input type="number" class="form-control" id="fontSizeInput" value="15" min="8" max="30"></div></div>
+                                            <div class="col-md-3"><div class="mb-3"><label class="form-label"><i class="fas fa-layer-group"></i> Màu mỗi dòng</label><div class="form-check"><input class="form-check-input" type="checkbox" id="multiColorCheck"><label class="form-check-label" for="multiColorCheck">Nhiều màu</label></div></div></div>
                                         </div>
                                         
-                                        <div class="mb-3">
-                                            <label class="form-label"><i class="fas fa-file-alt"></i> Nội dung</label>
-                                            <textarea class="form-control" id="contentInput_treongon" rows="4" placeholder="pndkdzcute&#10;pndkdzcute&#10;22:22"></textarea>
-                                        </div>
+                                        <div class="mb-3"><label class="form-label"><i class="fas fa-file-alt"></i> Nội dung</label><textarea class="form-control" id="contentInput_treongon" rows="4" placeholder="pndkdzcute&#10;pndkdzcute&#10;22:22"></textarea></div>
                                         
-                                        <div class="mb-3">
-                                            <label class="form-label"><i class="fas fa-upload"></i> Hoặc tải file .txt</label>
+                                        <div class="mb-3"><label class="form-label"><i class="fas fa-upload"></i> Hoặc tải file .txt</label>
                                             <div class="file-upload-area" onclick="document.getElementById('fileInput_treongon').click()">
                                                 <i class="fas fa-cloud-upload-alt fa-2x"></i>
                                                 <p style="margin: 5px 0 0 0; font-size: 13px;">Nhấn để chọn file .txt</p>
                                                 <input type="file" id="fileInput_treongon" accept=".txt" style="display:none;" onchange="loadFileContent(event, 'contentInput_treongon', 'fileName_treongon', 'fileText_treongon')">
                                             </div>
-                                            <div id="fileName_treongon" class="mt-2 text-success" style="display:none; font-size: 13px;">
-                                                📎 Đã chọn: <span id="fileText_treongon"></span>
-                                            </div>
+                                            <div id="fileName_treongon" class="mt-2 text-success" style="display:none; font-size: 13px;">📎 Đã chọn: <span id="fileText_treongon"></span></div>
                                         </div>
                                         
-                                        <button class="btn btn-primary-custom w-100" onclick="startTreongon()" id="treongonBtn">
-                                            <i class="fas fa-play"></i> Bắt đầu treo
-                                        </button>
+                                        <button class="btn btn-primary-custom w-100" onclick="startTreongon()" id="treongonBtn"><i class="fas fa-play"></i> Bắt đầu treo</button>
                                         <div id="treongonStatus" class="mt-3"></div>
                                     </div>
                                 </div>
@@ -2622,85 +1472,49 @@ HTML_TEMPLATE = """
                         </div>
                     </div>
 
+                    <!-- NHAY TAG -->
                     <div class="tab-pane fade" id="nhaytag" role="tabpanel">
                         <div class="row">
                             <div class="col-md-5">
                                 <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
-                                        <i class="fas fa-comments"></i> Box chat
-                                    </div>
+                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;"><i class="fas fa-comments"></i> Box chat</div>
                                     <div class="card-body">
-                                        <button class="btn btn-primary-custom w-100 mb-3" onclick="refreshBoxes('nhaytag')">
-                                            <i class="fas fa-sync"></i> Làm mới box chat
-                                        </button>
+                                        <button class="btn btn-primary-custom w-100 mb-3" onclick="refreshBoxes('nhaytag')"><i class="fas fa-sync"></i> Làm mới box chat</button>
                                         <div id="boxListContainer_nhaytag" class="list-container">
-                                            <div class="empty-state">
-                                                <i class="fas fa-inbox"></i>
-                                                <p>Chưa có box chat</p>
-                                                <small>Chọn tài khoản Zalo và làm mới</small>
-                                            </div>
+                                            <div class="empty-state"><i class="fas fa-inbox"></i><p>Chưa có box chat</p><small>Chọn tài khoản Zalo và làm mới</small></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-7">
                                 <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
-                                        <i class="fas fa-tags"></i> Nhây Tag
-                                        <span class="badge bg-light text-dark" id="sessionStatus_nhaytag" style="float: right; font-size: 11px;">Chưa đăng nhập</span>
-                                    </div>
+                                    <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;"><i class="fas fa-tags"></i> Nhây Tag <span class="badge bg-light text-dark" id="sessionStatus_nhaytag" style="float: right; font-size: 11px;">Chưa đăng nhập</span></div>
                                     <div class="card-body">
                                         <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-user"></i> Tài khoản đang dùng</label>
-                                                    <input type="text" class="form-control" id="currentAccountDisplay_nhaytag" readonly value="Chưa chọn">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-comment"></i> Box đã chọn</label>
-                                                    <input type="text" class="form-control" id="selectedBox_nhaytag" readonly placeholder="Chọn box">
-                                                </div>
-                                            </div>
+                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-user"></i> Tài khoản đang dùng</label><input type="text" class="form-control" id="currentAccountDisplay_nhaytag" readonly value="Chưa chọn"></div></div>
+                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-comment"></i> Box đã chọn</label><input type="text" class="form-control" id="selectedBox_nhaytag" readonly placeholder="Chọn box"></div></div>
                                         </div>
                                         
                                         <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-clock"></i> Delay (giây)</label>
-                                                    <input type="number" class="form-control" id="delayInput_nhaytag" value="5" min="1" step="0.5">
+                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-clock"></i> Delay (giây)</label><input type="number" class="form-control" id="delayInput_nhaytag" value="5" min="1" step="0.5"></div></div>
+                                            <div class="col-md-6"><div class="mb-3"><label class="form-label"><i class="fas fa-file-alt"></i> File nội dung</label>
+                                                <div class="file-upload-area" onclick="document.getElementById('fileInput_nhaytag').click()" style="padding: 10px;">
+                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                    <span style="font-size: 13px;">Nhấn để chọn file .txt</span>
+                                                    <input type="file" id="fileInput_nhaytag" accept=".txt" style="display:none;" onchange="loadNhayFile(event)">
                                                 </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><i class="fas fa-file-alt"></i> File nội dung</label>
-                                                    <div class="file-upload-area" onclick="document.getElementById('fileInput_nhaytag').click()" style="padding: 10px;">
-                                                        <i class="fas fa-cloud-upload-alt"></i>
-                                                        <span style="font-size: 13px;">Nhấn để chọn file .txt</span>
-                                                        <input type="file" id="fileInput_nhaytag" accept=".txt" style="display:none;" onchange="loadNhayFile(event)">
-                                                    </div>
-                                                    <div id="fileName_nhaytag" class="mt-2 text-success" style="display:none; font-size: 13px;">
-                                                        📎 Đã chọn: <span id="fileText_nhaytag"></span>
-                                                    </div>
-                                                    <div id="nhayFilePreview" class="mt-2"></div>
-                                                    <input type="hidden" id="nhayFileContent" value="">
-                                                    <small style="color: rgba(255,255,255,0.3); font-size: 11px;">Mỗi dòng là 1 đoạn nội dung sẽ được gửi</small>
-                                                </div>
-                                            </div>
+                                                <div id="fileName_nhaytag" class="mt-2 text-success" style="display:none; font-size: 13px;">📎 Đã chọn: <span id="fileText_nhaytag"></span></div>
+                                                <div id="nhayFilePreview" class="mt-2"></div>
+                                                <input type="hidden" id="nhayFileContent" value="">
+                                                <small style="color: rgba(255,255,255,0.3); font-size: 11px;">Mỗi dòng là 1 đoạn nội dung sẽ được gửi</small>
+                                            </div></div>
                                         </div>
                                         
                                         <div class="mb-3">
                                             <label class="form-label"><i class="fas fa-users"></i> Thành viên (chọn người tag)</label>
-                                            <button class="btn btn-sm btn-primary-custom mb-2" onclick="fetchMembers('nhaytag')" style="font-size: 12px; padding: 5px 15px;">
-                                                <i class="fas fa-sync"></i> Lấy danh sách thành viên
-                                            </button>
+                                            <button class="btn btn-sm btn-primary-custom mb-2" onclick="fetchMembers('nhaytag')" style="font-size: 12px; padding: 5px 15px;"><i class="fas fa-sync"></i> Lấy danh sách thành viên</button>
                                             <div id="memberListContainer_nhaytag" class="member-list">
-                                                <div class="empty-state">
-                                                    <i class="fas fa-users"></i>
-                                                    <p>Chưa có thành viên</p>
-                                                    <small>Nhấn nút trên để lấy</small>
-                                                </div>
+                                                <div class="empty-state"><i class="fas fa-users"></i><p>Chưa có thành viên</p><small>Nhấn nút trên để lấy</small></div>
                                             </div>
                                             <div class="mt-2">
                                                 <button class="btn btn-sm btn-outline-success" onclick="selectAllMembers('nhaytag')" style="border-color: rgba(40,167,69,0.3); color: #28a745; font-size: 12px;">Chọn tất cả</button>
@@ -2709,9 +1523,7 @@ HTML_TEMPLATE = """
                                             </div>
                                         </div>
                                         
-                                        <button class="btn btn-warning-custom w-100" onclick="startNhaytag()" id="nhaytagBtn">
-                                            <i class="fas fa-play"></i> Bắt đầu nhây tag
-                                        </button>
+                                        <button class="btn btn-warning-custom w-100" onclick="startNhaytag()" id="nhaytagBtn"><i class="fas fa-play"></i> Bắt đầu nhây tag</button>
                                         <div id="nhaytagStatus" class="mt-3"></div>
                                     </div>
                                 </div>
@@ -2719,30 +1531,18 @@ HTML_TEMPLATE = """
                         </div>
                     </div>
 
+                    <!-- TASKS -->
                     <div class="tab-pane fade" id="tasks" role="tabpanel">
                         <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                            <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;">
-                                <i class="fas fa-tasks"></i> Quản Lý Task
-                                <span class="badge bg-light text-dark" id="taskListCount" style="float: right; font-size: 11px;">0</span>
-                            </div>
+                            <div class="card-header" style="background: transparent; border: none; color: #fff; padding: 15px 20px; font-weight: 600; font-size: 14px;"><i class="fas fa-tasks"></i> Quản Lý Task <span class="badge bg-light text-dark" id="taskListCount" style="float: right; font-size: 11px;">0</span></div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshTasks()" style="border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); font-size: 12px;">
-                                        <i class="fas fa-sync"></i> Làm mới
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="stopAllTasks()" style="border-color: rgba(255,193,7,0.2); color: #ffc107; font-size: 12px;">
-                                        <i class="fas fa-stop"></i> Dừng tất cả
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="clearFinishedTasks()" style="border-color: rgba(220,53,69,0.2); color: #dc3545; font-size: 12px;">
-                                        <i class="fas fa-trash"></i> Xóa task hoàn thành
-                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshTasks()" style="border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); font-size: 12px;"><i class="fas fa-sync"></i> Làm mới</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="stopAllTasks()" style="border-color: rgba(255,193,7,0.2); color: #ffc107; font-size: 12px;"><i class="fas fa-stop"></i> Dừng tất cả</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="clearFinishedTasks()" style="border-color: rgba(220,53,69,0.2); color: #dc3545; font-size: 12px;"><i class="fas fa-trash"></i> Xóa task hoàn thành</button>
                                 </div>
                                 <div class="list-container" id="taskList" style="max-height: 500px;">
-                                    <div class="empty-state">
-                                        <i class="fas fa-tasks"></i>
-                                        <p>Chưa có task nào</p>
-                                        <small>Bắt đầu treo ngôn hoặc nhây tag để tạo task</small>
-                                    </div>
+                                    <div class="empty-state"><i class="fas fa-tasks"></i><p>Chưa có task nào</p><small>Bắt đầu treo ngôn hoặc nhây tag để tạo task</small></div>
                                 </div>
                             </div>
                         </div>
@@ -2751,6 +1551,7 @@ HTML_TEMPLATE = """
             </div>
         </div>
 
+        <!-- FOOTER -->
         <div class="footer-main">
             <p style="margin: 0;">
                 <i class="fas fa-crown" style="color: #f7b503;"></i>
@@ -2763,6 +1564,18 @@ HTML_TEMPLATE = """
                 <i class="fas fa-shield-alt"></i> Bảo mật & An toàn
             </p>
         </div>
+    </div>
+
+    <!-- ===== MUSIC PLAYER ===== -->
+    <div id="musicPlayer">
+        <button id="playBtn" title="Bật/Tắt nhạc"><i class="fas fa-play"></i></button>
+        <div class="music-info">
+            <div class="song-name" id="songName">🎵 Đang tải...</div>
+            <div class="song-artist" id="songArtist"><span class="status-dot"></span> Nhạc nền</div>
+        </div>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.3">
+        <button id="nextBtn" title="Bài tiếp theo"><i class="fas fa-step-forward"></i></button>
+        <audio id="bgMusic" preload="auto"></audio>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -2781,19 +1594,14 @@ HTML_TEMPLATE = """
             fetch('/api/logout', { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    window.location.href = '/login';
-                }
+                if (data.success) window.location.href = '/login';
             });
         }
 
         // ===== VARIABLES =====
-        let selectedBox_treongon = '';
-        let selectedBoxId_treongon = '';
-        let selectedBox_nhaytag = '';
-        let selectedBoxId_nhaytag = '';
-        let members_nhaytag = [];
-        let selectedMembers_nhaytag = [];
+        let selectedBox_treongon = '', selectedBoxId_treongon = '';
+        let selectedBox_nhaytag = '', selectedBoxId_nhaytag = '';
+        let members_nhaytag = [], selectedMembers_nhaytag = [];
 
         // ===== SYNC COLOR =====
         document.getElementById('colorPicker').addEventListener('input', function() {
@@ -2826,14 +1634,12 @@ HTML_TEMPLATE = """
         function loadNhayFile(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
             const reader = new FileReader();
             reader.onload = function(e) {
                 const content = e.target.result;
                 document.getElementById('nhayFileContent').value = content;
                 document.getElementById('fileName_nhaytag').style.display = 'block';
                 document.getElementById('fileText_nhaytag').textContent = file.name;
-                
                 const lines = content.split('\\n').filter(l => l.trim());
                 const preview = lines.slice(0, 10).map(l => l.trim()).join('\\n');
                 document.getElementById('nhayFilePreview').innerHTML = 
@@ -2852,16 +1658,11 @@ HTML_TEMPLATE = """
             const cookies = document.getElementById('accCookies').value.trim();
             const imei = document.getElementById('accImei').value.trim();
             const note = document.getElementById('accNote').value.trim();
-            
             if (!name || !cookies || !imei) {
-                document.getElementById('addAccountStatus').innerHTML = 
-                    '<div class="alert alert-danger">⚠️ Vui lòng nhập đầy đủ!</div>';
+                document.getElementById('addAccountStatus').innerHTML = '<div class="alert alert-danger">⚠️ Vui lòng nhập đầy đủ!</div>';
                 return;
             }
-            
-            document.getElementById('addAccountStatus').innerHTML = 
-                '<div class="text-center"><div class="spinner-small"></div> Đang lưu...</div>';
-            
+            document.getElementById('addAccountStatus').innerHTML = '<div class="text-center"><div class="spinner-small"></div> Đang lưu...</div>';
             fetch('/add_account', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2870,33 +1671,24 @@ HTML_TEMPLATE = """
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById('addAccountStatus').innerHTML = 
-                        '<div class="alert alert-success">✅ ' + data.message + '</div>';
+                    document.getElementById('addAccountStatus').innerHTML = '<div class="alert alert-success">✅ ' + data.message + '</div>';
                     setTimeout(() => location.reload(), 1000);
                 } else {
-                    document.getElementById('addAccountStatus').innerHTML = 
-                        '<div class="alert alert-danger">❌ ' + data.message + '</div>';
+                    document.getElementById('addAccountStatus').innerHTML = '<div class="alert alert-danger">❌ ' + data.message + '</div>';
                 }
             })
             .catch(err => {
-                document.getElementById('addAccountStatus').innerHTML = 
-                    '<div class="alert alert-danger">❌ Lỗi: ' + err + '</div>';
+                document.getElementById('addAccountStatus').innerHTML = '<div class="alert alert-danger">❌ Lỗi: ' + err + '</div>';
             });
         }
 
         function useAccount(accountId) {
-            document.getElementById('accountList').innerHTML = 
-                '<div class="text-center"><div class="spinner-small"></div> Đang đăng nhập...</div>';
-            
+            document.getElementById('accountList').innerHTML = '<div class="text-center"><div class="spinner-small"></div> Đang đăng nhập...</div>';
             fetch('/use_account/' + accountId, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('❌ ' + data.message);
-                    location.reload();
-                }
+                if (data.success) location.reload();
+                else { alert('❌ ' + data.message); location.reload(); }
             });
         }
 
@@ -2915,7 +1707,6 @@ HTML_TEMPLATE = """
             const containerId = mode === 'treongon' ? 'boxListContainer_treongon' : 'boxListContainer_nhaytag';
             const container = document.getElementById(containerId);
             container.innerHTML = '<div class="text-center"><div class="spinner-small"></div> Đang lấy box...</div>';
-            
             fetch('/get_boxes')
             .then(res => res.json())
             .then(data => {
@@ -2931,17 +1722,11 @@ HTML_TEMPLATE = """
                     });
                     container.innerHTML = html;
                 } else {
-                    container.innerHTML = `<div class="empty-state">
-                        <i class="fas fa-inbox"></i>
-                        <p>${data.message || 'Không tìm thấy box chat'}</p>
-                    </div>`;
+                    container.innerHTML = `<div class="empty-state"><i class="fas fa-inbox"></i><p>${data.message || 'Không tìm thấy box chat'}</p></div>`;
                 }
             })
             .catch(err => {
-                container.innerHTML = `<div class="empty-state">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>Lỗi: ${err}</p>
-                </div>`;
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Lỗi: ${err}</p></div>`;
             });
         }
 
@@ -2963,7 +1748,6 @@ HTML_TEMPLATE = """
                     el.querySelector('.box-check').textContent = '';
                 });
             }
-            
             const el = document.getElementById(boxId);
             if (el) {
                 el.classList.add('selected');
@@ -2978,10 +1762,8 @@ HTML_TEMPLATE = """
                 alert('⚠️ Chọn box chat trước!');
                 return;
             }
-            
             const container = document.getElementById('memberListContainer_nhaytag');
             container.innerHTML = '<div class="text-center"><div class="spinner-small"></div> Đang lấy thành viên...</div>';
-            
             fetch('/get_members/' + selectedBoxId_nhaytag)
             .then(res => res.json())
             .then(data => {
@@ -2990,17 +1772,11 @@ HTML_TEMPLATE = """
                     selectedMembers_nhaytag = [];
                     renderMembers('nhaytag');
                 } else {
-                    container.innerHTML = `<div class="empty-state">
-                        <i class="fas fa-users"></i>
-                        <p>${data.message || 'Không lấy được thành viên'}</p>
-                    </div>`;
+                    container.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>${data.message || 'Không lấy được thành viên'}</p></div>`;
                 }
             })
             .catch(err => {
-                container.innerHTML = `<div class="empty-state">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>Lỗi: ${err}</p>
-                </div>`;
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Lỗi: ${err}</p></div>`;
             });
         }
 
@@ -3010,7 +1786,6 @@ HTML_TEMPLATE = """
                 container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>Chưa có thành viên</p></div>';
                 return;
             }
-            
             let html = '';
             members_nhaytag.forEach((member, index) => {
                 const isSelected = selectedMembers_nhaytag.includes(member.id);
@@ -3025,11 +1800,8 @@ HTML_TEMPLATE = """
 
         function toggleMember(memberId) {
             const idx = selectedMembers_nhaytag.indexOf(memberId);
-            if (idx === -1) {
-                selectedMembers_nhaytag.push(memberId);
-            } else {
-                selectedMembers_nhaytag.splice(idx, 1);
-            }
+            if (idx === -1) selectedMembers_nhaytag.push(memberId);
+            else selectedMembers_nhaytag.splice(idx, 1);
             renderMembers('nhaytag');
         }
 
@@ -3045,16 +1817,9 @@ HTML_TEMPLATE = """
 
         // ===== START TREO NGÔN =====
         function startTreongon() {
-            if (!selectedBoxId_treongon) {
-                alert('⚠️ Chọn box chat!');
-                return;
-            }
-            
+            if (!selectedBoxId_treongon) { alert('⚠️ Chọn box chat!'); return; }
             const content = document.getElementById('contentInput_treongon').value;
-            if (!content.trim()) {
-                alert('⚠️ Nhập nội dung!');
-                return;
-            }
+            if (!content.trim()) { alert('⚠️ Nhập nội dung!'); return; }
             
             const delay = parseFloat(document.getElementById('delayInput_treongon').value) || 2;
             const total = parseInt(document.getElementById('totalInput_treongon').value) || 1;
@@ -3077,31 +1842,18 @@ HTML_TEMPLATE = """
                 body: JSON.stringify({
                     box_id: selectedBoxId_treongon,
                     box_name: selectedBox_treongon,
-                    content: content,
-                    delay: delay,
-                    total: total,
-                    tag_all: tagAll,
-                    tag_text: tagText,
-                    tag_color: tagColor,
-                    colored: colored,
-                    bold: bold,
-                    color: color,
-                    font_size: fontSize,
-                    multi_color: multiColor
+                    content, delay, total, tag_all: tagAll, tag_text: tagText,
+                    tag_color: tagColor, colored, bold, color, font_size: fontSize, multi_color: multiColor
                 })
             })
             .then(res => res.json())
             .then(data => {
                 btn.innerHTML = '<i class="fas fa-play"></i> Bắt đầu treo';
                 btn.disabled = false;
-                
                 const status = document.getElementById('treongonStatus');
                 if (data.success) {
                     status.innerHTML = '<div class="alert alert-success">✅ ' + data.message + '</div>';
-                    setTimeout(() => {
-                        status.innerHTML = '';
-                        refreshTasks();
-                    }, 2000);
+                    setTimeout(() => { status.innerHTML = ''; refreshTasks(); }, 2000);
                 } else {
                     status.innerHTML = '<div class="alert alert-danger">❌ ' + data.message + '</div>';
                 }
@@ -3109,30 +1861,17 @@ HTML_TEMPLATE = """
             .catch(err => {
                 btn.innerHTML = '<i class="fas fa-play"></i> Bắt đầu treo';
                 btn.disabled = false;
-                document.getElementById('treongonStatus').innerHTML = 
-                    '<div class="alert alert-danger">❌ Lỗi: ' + err + '</div>';
+                document.getElementById('treongonStatus').innerHTML = '<div class="alert alert-danger">❌ Lỗi: ' + err + '</div>';
             });
         }
 
         // ===== START NHAY TAG =====
         function startNhaytag() {
-            if (!selectedBoxId_nhaytag) {
-                alert('⚠️ Chọn box chat!');
-                return;
-            }
-            
-            if (selectedMembers_nhaytag.length === 0) {
-                alert('⚠️ Chọn ít nhất 1 thành viên để tag!');
-                return;
-            }
-            
+            if (!selectedBoxId_nhaytag) { alert('⚠️ Chọn box chat!'); return; }
+            if (selectedMembers_nhaytag.length === 0) { alert('⚠️ Chọn ít nhất 1 thành viên để tag!'); return; }
             const delay = parseFloat(document.getElementById('delayInput_nhaytag').value) || 5;
             const content = document.getElementById('nhayFileContent').value;
-            
-            if (!content.trim()) {
-                alert('⚠️ Vui lòng upload file nội dung!');
-                return;
-            }
+            if (!content.trim()) { alert('⚠️ Vui lòng upload file nội dung!'); return; }
 
             const btn = document.getElementById('nhaytagBtn');
             btn.innerHTML = '<span class="spinner-small"></span> Đang khởi động...';
@@ -3153,14 +1892,10 @@ HTML_TEMPLATE = """
             .then(data => {
                 btn.innerHTML = '<i class="fas fa-play"></i> Bắt đầu nhây tag';
                 btn.disabled = false;
-                
                 const status = document.getElementById('nhaytagStatus');
                 if (data.success) {
                     status.innerHTML = '<div class="alert alert-success">✅ ' + data.message + '</div>';
-                    setTimeout(() => {
-                        status.innerHTML = '';
-                        refreshTasks();
-                    }, 2000);
+                    setTimeout(() => { status.innerHTML = ''; refreshTasks(); }, 2000);
                 } else {
                     status.innerHTML = '<div class="alert alert-danger">❌ ' + data.message + '</div>';
                 }
@@ -3168,53 +1903,38 @@ HTML_TEMPLATE = """
             .catch(err => {
                 btn.innerHTML = '<i class="fas fa-play"></i> Bắt đầu nhây tag';
                 btn.disabled = false;
-                document.getElementById('nhaytagStatus').innerHTML = 
-                    '<div class="alert alert-danger">❌ Lỗi: ' + err + '</div>';
+                document.getElementById('nhaytagStatus').innerHTML = '<div class="alert alert-danger">❌ Lỗi: ' + err + '</div>';
             });
         }
 
         // ===== TASKS =====
         function stopTask(taskId, type) {
             if (!confirm('Dừng task #' + taskId + '?')) return;
-            
             const endpoint = type === 'nhaytag' ? '/stop_nhaytag/' : '/stop_spam/';
             fetch(endpoint + taskId, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    refreshTasks();
-                    alert('✅ Đã dừng task #' + taskId);
-                } else {
-                    alert('❌ ' + data.message);
-                }
+                if (data.success) { refreshTasks(); alert('✅ Đã dừng task #' + taskId); }
+                else alert('❌ ' + data.message);
             });
         }
 
         function stopAllTasks() {
             if (!confirm('Dừng tất cả task của bạn?')) return;
-            
             fetch('/stop_all_tasks', { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    refreshTasks();
-                    alert('✅ ' + data.message);
-                } else {
-                    alert('❌ ' + data.message);
-                }
+                if (data.success) { refreshTasks(); alert('✅ ' + data.message); }
+                else alert('❌ ' + data.message);
             });
         }
 
         function clearFinishedTasks() {
             if (!confirm('Xóa task đã hoàn thành?')) return;
-            
             fetch('/clear_finished_tasks', { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    refreshTasks();
-                    alert('✅ ' + data.message);
-                }
+                if (data.success) { refreshTasks(); alert('✅ ' + data.message); }
             });
         }
 
@@ -3237,25 +1957,14 @@ HTML_TEMPLATE = """
                 runningCount.textContent = running.length;
                 
                 if (tasks.length === 0) {
-                    container.innerHTML = `<div class="empty-state">
-                        <i class="fas fa-tasks"></i>
-                        <p>Chưa có task nào</p>
-                        <small>Bắt đầu treo ngôn hoặc nhây tag để tạo task</small>
-                    </div>`;
+                    container.innerHTML = `<div class="empty-state"><i class="fas fa-tasks"></i><p>Chưa có task nào</p><small>Bắt đầu treo ngôn hoặc nhây tag để tạo task</small></div>`;
                     return;
                 }
                 
                 let html = '';
                 tasks.forEach(task => {
                     const statusClass = task.status;
-                    const statusLabel = {
-                        'running': '🟢 Đang chạy',
-                        'done': '✅ Hoàn thành',
-                        'error': '❌ Lỗi',
-                        'stopped': '⏹ Đã dừng',
-                        'die': '🔴 Cookie Die'
-                    }[task.status] || task.status;
-                    
+                    const statusLabel = { 'running': '🟢 Đang chạy', 'done': '✅ Hoàn thành', 'error': '❌ Lỗi', 'stopped': '⏹ Đã dừng', 'die': '🔴 Cookie Die' }[task.status] || task.status;
                     const progress = task.progress || 0;
                     const typeIcon = task.type === 'nhaytag' ? '🏷' : '📨';
                     const tagInfo = task.tag_text ? ` | 🏷 ${task.tag_text}` : '';
@@ -3263,44 +1972,27 @@ HTML_TEMPLATE = """
                     
                     html += `<div class="task-item" id="task_${task.id}">
                         <div class="task-header">
-                            <div>
-                                <strong style="font-size: 14px;">${typeIcon} #${task.id} — ${task.box_name}</strong>
-                                <span class="task-status ${statusClass}">${statusLabel}</span>
-                            </div>
-                            ${task.status === 'running' ? 
-                                `<button class="btn btn-danger btn-sm" onclick="stopTask('${task.id}', '${task.type}')" style="font-size: 11px; padding: 4px 12px;">
-                                    <i class="fas fa-stop"></i> Dừng
-                                </button>` : 
-                                `<button class="btn btn-outline-secondary btn-sm" onclick="removeTask('${task.id}')" style="font-size: 11px; padding: 4px 12px; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4);">
-                                    <i class="fas fa-trash"></i>
-                                </button>`
-                            }
+                            <div><strong style="font-size: 14px;">${typeIcon} #${task.id} — ${task.box_name}</strong><span class="task-status ${statusClass}">${statusLabel}</span></div>
+                            ${task.status === 'running' ? `<button class="btn btn-danger btn-sm" onclick="stopTask('${task.id}', '${task.type}')" style="font-size: 11px; padding: 4px 12px;"><i class="fas fa-stop"></i> Dừng</button>` : `<button class="btn btn-outline-secondary btn-sm" onclick="removeTask('${task.id}')" style="font-size: 11px; padding: 4px 12px; border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4);"><i class="fas fa-trash"></i></button>`}
                         </div>
                         <div class="text-muted small" style="color: rgba(255,255,255,0.3); font-size: 12px;">
                             ${task.type === 'treongon' ? `Đã gửi: ${task.sent}/${task.total} | Delay: ${task.delay}s` : `Delay: ${task.delay}s`}
                             ${tagInfo}${memberInfo}
                             ${task.error ? ' | ❌ ' + task.error : ''}
                         </div>
-                        <div class="task-progress">
-                            <div class="progress-fill" style="width: ${progress}%;"></div>
-                        </div>
+                        <div class="task-progress"><div class="progress-fill" style="width: ${progress}%;"></div></div>
                     </div>`;
                 });
                 container.innerHTML = html;
             })
-            .catch(err => {
-                console.error('Lỗi refresh tasks:', err);
-            });
+            .catch(err => console.error('Lỗi refresh tasks:', err));
         }
 
         function removeTask(taskId) {
             if (!confirm('Xóa task #' + taskId + '?')) return;
-            
             fetch('/remove_task/' + taskId, { method: 'DELETE' })
             .then(res => res.json())
-            .then(data => {
-                if (data.success) refreshTasks();
-            });
+            .then(data => { if (data.success) refreshTasks(); });
         }
 
         // ===== LOAD DATA =====
@@ -3318,11 +2010,7 @@ HTML_TEMPLATE = """
                 activeCount.textContent = accounts.filter(a => a.status === 'active').length;
                 
                 if (accounts.length === 0) {
-                    container.innerHTML = `<div class="empty-state">
-                        <i class="fas fa-users"></i>
-                        <p>Chưa có tài khoản Zalo nào</p>
-                        <small>Thêm tài khoản Zalo để bắt đầu</small>
-                    </div>`;
+                    container.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>Chưa có tài khoản Zalo nào</p><small>Thêm tài khoản Zalo để bắt đầu</small></div>`;
                     count.textContent = '0';
                     return;
                 }
@@ -3345,12 +2033,8 @@ HTML_TEMPLATE = """
                         </div>
                         <div>
                             <span class="account-status ${statusClass}">${acc.status}</span>
-                            <button class="btn btn-sm btn-primary ms-2" onclick="useAccount('${acc.id}')" title="Sử dụng" style="background: var(--primary); border: none; padding: 4px 10px; font-size: 12px;">
-                                <i class="fas fa-play"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger ms-1" onclick="deleteAccount('${acc.id}')" title="Xóa" style="background: var(--danger); border: none; padding: 4px 10px; font-size: 12px;">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            <button class="btn btn-sm btn-primary ms-2" onclick="useAccount('${acc.id}')" title="Sử dụng" style="background: var(--primary); border: none; padding: 4px 10px; font-size: 12px;"><i class="fas fa-play"></i></button>
+                            <button class="btn btn-sm btn-danger ms-1" onclick="deleteAccount('${acc.id}')" title="Xóa" style="background: var(--danger); border: none; padding: 4px 10px; font-size: 12px;"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>`;
                 });
@@ -3366,268 +2050,17 @@ HTML_TEMPLATE = """
             });
         }
 
-        // ===== AUTO REFRESH =====
-        setInterval(refreshTasks, 3000);
-
-        // ===== INIT =====
-        window.onload = function() {
-            loadAccounts();
-            refreshTasks();
-        };
-    </script>
-
-    <!-- ===== FLOATING MUSIC PLAYER - TIKTOK SUPPORT ===== -->
-    <style>
-        #musicPlayer {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            z-index: 9999;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 50px;
-            padding: 10px 18px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
-            transition: all 0.3s ease;
-            font-family: 'Segoe UI', sans-serif;
-            max-width: 350px;
-        }
-        #musicPlayer:hover {
-            background: rgba(0, 0, 0, 0.85);
-            border-color: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.8);
-        }
-        #playBtn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-            color: #fff;
-            font-size: 18px;
-            cursor: pointer;
-            outline: none;
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: 0.3s;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            flex-shrink: 0;
-        }
-        #playBtn:hover {
-            transform: scale(1.12);
-            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
-        }
-        #volumeSlider {
-            width: 65px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            -webkit-appearance: none;
-            appearance: none;
-            outline: none;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        #volumeSlider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid #fff;
-            box-shadow: 0 0 15px rgba(102, 126, 234, 0.4);
-        }
-        #volumeSlider::-moz-range-thumb {
-            width: 14px;
-            height: 14px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid #fff;
-        }
-        .music-info {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 11px;
-            display: flex;
-            flex-direction: column;
-            line-height: 1.3;
-            min-width: 0;
-            flex: 1;
-        }
-        .music-info .song-name {
-            color: #fff;
-            font-weight: 600;
-            font-size: 12px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .music-info .song-artist {
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.4);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .music-info .status-dot {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #28a745;
-            margin-right: 5px;
-            animation: pulse-dot 1.2s ease-in-out infinite;
-            vertical-align: middle;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.7); }
-        }
-        #nextBtn {
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
-            padding: 5px;
-            flex-shrink: 0;
-        }
-        #nextBtn:hover {
-            color: #fff;
-            transform: rotate(30deg);
-        }
-        #sourceTag {
-            font-size: 8px;
-            background: rgba(255,255,255,0.1);
-            padding: 2px 6px;
-            border-radius: 10px;
-            color: rgba(255,255,255,0.3);
-            margin-left: 4px;
-            flex-shrink: 0;
-        }
-        @media (max-width: 480px) {
-            #musicPlayer {
-                padding: 8px 12px;
-                gap: 10px;
-                bottom: 15px;
-                right: 15px;
-                max-width: 220px;
-            }
-            #volumeSlider {
-                width: 40px;
-            }
-            #playBtn {
-                width: 32px;
-                height: 32px;
-                font-size: 15px;
-            }
-            .music-info .song-name {
-                font-size: 10px;
-            }
-            .music-info .song-artist {
-                font-size: 9px;
-            }
-            #nextBtn {
-                font-size: 13px;
-            }
-            #sourceTag {
-                font-size: 7px;
-                padding: 1px 4px;
-            }
-        }
-    </style>
-
-    <div id="musicPlayer">
-        <button id="playBtn" title="Bật/Tắt nhạc">
-            <i class="fas fa-play"></i>
-        </button>
-        <div class="music-info">
-            <div class="song-name" id="songName">🎵 Đang tải...</div>
-            <div class="song-artist" id="songArtist">
-                <span class="status-dot"></span> Nhạc nền            </div>
-        </div>
-        <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.3">
-        <button id="nextBtn" title="Bài tiếp theo">
-            <i class="fas fa-step-forward"></i>
-        </button>
-        <span id="sourceTag">🎵</span>
-        <audio id="bgMusic" preload="auto"></audio>
-    </div>
-
-    <script>
+        // ===== MUSIC PLAYER =====
         (function() {
-            // ===== DANH SÁCH NHẠC (Hỗ trợ TikTok) =====
             const PLAYLIST = [
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cxjhYc/',
-                    name: 'Nhạc TikTok 1', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cxecTW/',
-                    name: 'Nhạc TikTok 2', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cxe7Sv/',
-                    name: 'Nhạc TikTok 3', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cxSb5v/',
-                    name: 'Nhạc TikTok 4', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cxrDPM/',
-                    name: 'Nhạc TikTok 5', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cxrpsX/',
-                    name: 'Nhạc TikTok 6', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cx5Wbx/',
-                    name: 'Nhạc TikTok 7', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                { 
-                    url: 'https://vt.tiktok.com/ZS4cx5Xtf/',
-                    name: 'Nhạc TikTok 8', 
-                    artist: 'TikTok',
-                    type: 'tiktok'
-                },
-                // Fallback MP3 (nếu TikTok không load được)
-                { 
-                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-                    name: 'Nhạc Dự Phòng 1', 
-                    artist: 'SoundHelix',
-                    type: 'mp3'
-                },
-                { 
-                    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-                    name: 'Nhạc Dự Phòng 2', 
-                    artist: 'SoundHelix',
-                    type: 'mp3'
-                }
+                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', name: 'Nhạc Chill 1', artist: 'SoundHelix' },
+                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', name: 'Nhạc Chill 2', artist: 'SoundHelix' },
+                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', name: 'Nhạc Chill 3', artist: 'SoundHelix' },
+                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', name: 'Nhạc Chill 4', artist: 'SoundHelix' },
+                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', name: 'Nhạc Chill 5', artist: 'SoundHelix' },
+                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', name: 'Nhạc Chill 6', artist: 'SoundHelix' },
+                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3', name: 'Nhạc Chill 7', artist: 'SoundHelix' },
+                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3', name: 'Nhạc Chill 8', artist: 'SoundHelix' }
             ];
 
             const audio = document.getElementById('bgMusic');
@@ -3636,91 +2069,33 @@ HTML_TEMPLATE = """
             const volumeSlider = document.getElementById('volumeSlider');
             const songName = document.getElementById('songName');
             const songArtist = document.getElementById('songArtist');
-            const sourceTag = document.getElementById('sourceTag');
 
             let currentIndex = 0;
-            let currentIframe = null;
-            let isTikTokMode = false;
 
-            // ===== HÀM TẠO IF TIKTOK =====
-            function createTikTokIframe(url) {
-                if (currentIframe) {
-                    currentIframe.remove();
-                    currentIframe = null;
-                }
-
-                const iframe = document.createElement('iframe');
-                iframe.style.cssText = 'position:absolute; top:-9999px; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;';
-                iframe.allow = 'autoplay; encrypted-media;';
-                
-                let embedUrl = url;
-                if (url.includes('vt.tiktok.com') || url.includes('tiktok.com')) {
-                    embedUrl = url;
-                }
-                
-                iframe.src = embedUrl;
-                iframe.id = 'tiktokAudioPlayer';
-                document.body.appendChild(iframe);
-                currentIframe = iframe;
-                
-                return iframe;
-            }
-
-            // ===== HÀM PHÁT BÀI HÁT =====
             function playSong(index) {
                 const song = PLAYLIST[index];
                 if (!song) return;
-                
                 songName.textContent = `🎵 ${song.name}`;
-                songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
-                sourceTag.textContent = song.type === 'tiktok' ? '🎵 TIKTOK' : '🎵 MP3';
-                
-                isTikTokMode = song.type === 'tiktok';
-                
-                if (isTikTokMode) {
-                    try {
-                        createTikTokIframe(song.url);
-                        setTimeout(() => {
-                            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                        }, 2000);
-                    } catch(e) {
-                        console.warn('Lỗi load TikTok, chuyển sang MP3:', e);
-                        isTikTokMode = false;
-                        playMp3(song.url);
-                    }
-                } else {
-                    playMp3(song.url);
-                }
-                
-                currentIndex = index;
-                try {
-                    localStorage.setItem('currentSongIndex', index);
-                    localStorage.setItem('currentSongType', song.type);
-                } catch(e) {}
-            }
-
-            // ===== HÀM PHÁT MP3 =====
-            function playMp3(url) {
-                if (currentIframe) {
-                    currentIframe.remove();
-                    currentIframe = null;
-                }
-                
-                audio.src = url;
+                songArtist.textContent = `${song.artist}`;
+                audio.src = song.url;
                 audio.load();
-                
                 const playPromise = audio.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
                         playBtn.innerHTML = '<i class="fas fa-pause"></i>';
                     }).catch(() => {
                         playBtn.innerHTML = '<i class="fas fa-play"></i>';
-                        songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">🔊 Nhấn Play để nghe</span>`;
                     });
                 }
+                currentIndex = index;
+                localStorage.setItem('currentSongIndex', index);
             }
 
-            // ===== HÀM PHÁT NGẪU NHIÊN =====
+            function nextSong() {
+                let newIndex = (currentIndex + 1) % PLAYLIST.length;
+                playSong(newIndex);
+            }
+
             function getRandomSong() {
                 return Math.floor(Math.random() * PLAYLIST.length);
             }
@@ -3729,51 +2104,19 @@ HTML_TEMPLATE = """
                 playSong(getRandomSong());
             }
 
-            function nextSong() {
-                let newIndex;
-                do {
-                    newIndex = getRandomSong();
-                } while (newIndex === currentIndex && PLAYLIST.length > 1);
-                playSong(newIndex);
-            }
-
-            // ===== ĐIỀU KHIỂN =====
             volumeSlider.addEventListener('input', function() {
                 audio.volume = parseFloat(this.value);
                 localStorage.setItem('musicVolume', audio.volume);
             });
 
             playBtn.addEventListener('click', function() {
-                if (isTikTokMode) {
-                    if (currentIframe) {
-                        const src = currentIframe.src;
-                        if (this.innerHTML.includes('pause')) {
-                            currentIframe.src = 'about:blank';
-                            this.innerHTML = '<i class="fas fa-play"></i>';
-                            songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
-                        } else {
-                            currentIframe.src = src;
-                            this.innerHTML = '<i class="fas fa-pause"></i>';
-                            const song = PLAYLIST[currentIndex];
-                            if (song) {
-                                songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
-                            }
-                        }
-                    }
+                if (audio.paused) {
+                    audio.play().then(() => {
+                        this.innerHTML = '<i class="fas fa-pause"></i>';
+                    }).catch(e => console.warn('Lỗi phát nhạc:', e));
                 } else {
-                    if (audio.paused) {
-                        audio.play().then(() => {
-                            this.innerHTML = '<i class="fas fa-pause"></i>';
-                            const song = PLAYLIST[currentIndex];
-                            if (song) {
-                                songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
-                            }
-                        }).catch(e => console.warn('Lỗi phát nhạc:', e));
-                    } else {
-                        audio.pause();
-                        this.innerHTML = '<i class="fas fa-play"></i>';
-                        songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
-                    }
+                    audio.pause();
+                    this.innerHTML = '<i class="fas fa-play"></i>';
                 }
             });
 
@@ -3782,28 +2125,20 @@ HTML_TEMPLATE = """
             });
 
             audio.addEventListener('ended', function() {
-                if (!isTikTokMode) {
-                    nextSong();
-                }
+                nextSong();
             });
 
-            // ===== KHỞI TẠO =====
             function init() {
-                let savedIndex = null;
-                try {
-                    const saved = localStorage.getItem('currentSongIndex');
-                    if (saved !== null) {
-                        const idx = parseInt(saved);
-                        if (idx >= 0 && idx < PLAYLIST.length) {
-                            savedIndex = idx;
-                        }
+                let savedIndex = localStorage.getItem('currentSongIndex');
+                if (savedIndex !== null) {
+                    const idx = parseInt(savedIndex);
+                    if (idx >= 0 && idx < PLAYLIST.length) {
+                        playSong(idx);
+                    } else {
+                        playRandomSong();
                     }
-                } catch(e) {}
-                
-                if (savedIndex === null) {
-                    playRandomSong();
                 } else {
-                    playSong(savedIndex);
+                    playRandomSong();
                 }
                 
                 const savedVolume = localStorage.getItem('musicVolume');
@@ -3824,6 +2159,15 @@ HTML_TEMPLATE = """
                 });
             }
         })();
+
+        // ===== AUTO REFRESH =====
+        setInterval(refreshTasks, 3000);
+
+        // ===== INIT =====
+        window.onload = function() {
+            loadAccounts();
+            refreshTasks();
+        };
     </script>
 </body>
 </html>
@@ -3854,6 +2198,8 @@ def api_login():
         
         session['logged_in'] = True
         session['username'] = username
+        # Load tasks cho user này
+        load_tasks()
         return jsonify({'success': True, 'message': 'Đăng nhập thành công!'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -3891,10 +2237,8 @@ def api_register():
 @app.route('/api/logout', methods=['POST'])
 def api_logout():
     username = session.get('username')
-    if username:
-        # Xóa account_manager của user khỏi bộ nhớ
-        if username in account_managers:
-            del account_managers[username]
+    if username and username in account_managers:
+        del account_managers[username]
     session.clear()
     return jsonify({'success': True, 'message': 'Đã đăng xuất!'})
 
@@ -3909,6 +2253,7 @@ def require_login():
 # ===== FLASK ROUTES =====
 @app.route('/')
 def index():
+    load_tasks()
     return render_template_string(HTML_TEMPLATE, username=session.get('username', 'User'))
 
 # ===== ACCOUNT ROUTES =====
@@ -4148,14 +2493,11 @@ def run_treongon_task(task_id, imei, cookies):
         font_size = task.get('font_size', '15')
         multi_color = task.get('multi_color', False)
 
-        # Import hàm gửi tin nhắn
-        from zalo_send_message import send_full_message_with_style
-
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
         sent = loop.run_until_complete(
-            send_full_message_with_style(
+            send_full_message_with_style_async(
                 imei, cookies, box_id, content, 
                 delay, total, stop_flag, 
                 tag_all, tag_text, tag_color,
@@ -4286,7 +2628,6 @@ def stop_spam(task_id):
         if not task:
             return jsonify({'success': False, 'message': 'Không tìm thấy task'})
         
-        # Kiểm tra task có phải của user hiện tại không
         username = session.get('username', 'default')
         if task.get('username') != username:
             return jsonify({'success': False, 'message': 'Bạn không có quyền dừng task này!'})
@@ -4294,7 +2635,6 @@ def stop_spam(task_id):
         stop_flag = task.get('stop_flag')
         if stop_flag:
             stop_flag.set()
-            logger.info(f"✅ Đã set stop flag cho task {task_id}")
         
         task['status'] = 'stopped'
         task['finished_at'] = datetime.now().isoformat()
@@ -4312,7 +2652,6 @@ def stop_nhaytag(task_id):
         if not task:
             return jsonify({'success': False, 'message': 'Không tìm thấy task'})
         
-        # Kiểm tra task có phải của user hiện tại không
         username = session.get('username', 'default')
         if task.get('username') != username:
             return jsonify({'success': False, 'message': 'Bạn không có quyền dừng task này!'})
@@ -4320,7 +2659,6 @@ def stop_nhaytag(task_id):
         stop_flag = task.get('stop_flag')
         if stop_flag:
             stop_flag.set()
-            logger.info(f"✅ Đã set stop flag cho nhaytag task {task_id}")
         
         task['status'] = 'stopped'
         task['finished_at'] = datetime.now().isoformat()
@@ -4332,11 +2670,8 @@ def stop_nhaytag(task_id):
 
 @app.route('/stop_all_tasks', methods=['POST'])
 def stop_all_tasks():
-    """Chỉ dừng task của user hiện tại"""
     global spam_tasks, nhaytag_tasks
-    
     load_tasks()
-    
     try:
         stopped = 0
         username = session.get('username', 'default')
@@ -4368,7 +2703,6 @@ def stop_all_tasks():
 def remove_task(task_id):
     global spam_tasks, nhaytag_tasks
     try:
-        # Kiểm tra task thuộc user nào
         username = session.get('username', 'default')
         
         if task_id in spam_tasks:
@@ -4388,11 +2722,8 @@ def remove_task(task_id):
 
 @app.route('/clear_finished_tasks', methods=['POST'])
 def clear_finished_tasks():
-    """Chỉ xóa task hoàn thành của user hiện tại"""
     global spam_tasks, nhaytag_tasks
-    
     load_tasks()
-    
     try:
         finished = ['done', 'error', 'stopped']
         username = session.get('username', 'default')
@@ -4419,9 +2750,7 @@ def clear_finished_tasks():
 
 @app.route('/get_all_tasks', methods=['GET'])
 def get_all_tasks():
-    """Lấy tasks của user hiện tại"""
     global spam_tasks, nhaytag_tasks
-    
     load_tasks()
     cleanup_dead_tasks()
     
@@ -4429,7 +2758,6 @@ def get_all_tasks():
     username = session.get('username', 'default')
     
     for tid, task in spam_tasks.items():
-        # Chỉ lấy task của user hiện tại
         if task.get('username') != username:
             continue
             
@@ -4455,7 +2783,6 @@ def get_all_tasks():
         })
     
     for tid, task in nhaytag_tasks.items():
-        # Chỉ lấy task của user hiện tại
         if task.get('username') != username:
             continue
             
@@ -4492,6 +2819,6 @@ if __name__ == '__main__':
     print("🚀 WEB PNDK TOOL ĐA APP")
     print("📱 http://localhost:5000")
     print("🔐 Đăng nhập để sử dụng")
-    print("🎵 Nhạc nền từ TikTok (8 bài)")
+    print("🎵 Nhạc nền MP3 (8 bài)")
     print("=" * 60)
     app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
