@@ -1,4 +1,4 @@
-# webpndk.py - Zalo Tool Treo Ngôn + Nhây Tag (Có Đăng Nhập/Đăng Ký + Nhạc Nền)
+# webpndk.py - Zalo Tool Treo Ngôn + Nhây Tag (Có Đăng Nhập/Đăng Ký + Nhạc TikTok)
 # -*- coding: utf-8 -*-
 
 # ===== CHẶN LOG ZALO API =====
@@ -326,7 +326,6 @@ LOGIN_TEMPLATE = """
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body {
             background: #0a0a1a;
             min-height: 100vh;
@@ -337,7 +336,6 @@ LOGIN_TEMPLATE = """
             position: relative;
             overflow: hidden;
         }
-
         .bg-3d {
             position: fixed;
             top: 0;
@@ -349,7 +347,6 @@ LOGIN_TEMPLATE = """
             background-size: 400% 400%;
             animation: gradientShift 15s ease-in-out infinite;
         }
-
         @keyframes gradientShift {
             0% { background-position: 0% 0%; }
             25% { background-position: 100% 0%; }
@@ -357,7 +354,6 @@ LOGIN_TEMPLATE = """
             75% { background-position: 0% 100%; }
             100% { background-position: 0% 0%; }
         }
-
         .orb {
             position: fixed;
             border-radius: 50%;
@@ -369,14 +365,12 @@ LOGIN_TEMPLATE = """
         .orb-1 { width: 400px; height: 400px; top: -100px; right: -100px; background: radial-gradient(circle, rgba(102, 126, 234, 0.3), transparent); }
         .orb-2 { width: 300px; height: 300px; bottom: -50px; left: -50px; background: radial-gradient(circle, rgba(118, 75, 162, 0.3), transparent); animation-delay: -5s; }
         .orb-3 { width: 200px; height: 200px; top: 50%; left: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle, rgba(255,255,255,0.05), transparent); animation-delay: -10s; filter: blur(120px); }
-
         @keyframes orbFloat {
             0%, 100% { transform: translate(0, 0) scale(1); }
             25% { transform: translate(30px, -20px) scale(1.1); }
             50% { transform: translate(-20px, 30px) scale(0.9); }
             75% { transform: translate(20px, 20px) scale(1.05); }
         }
-
         .particles-container {
             position: fixed;
             width: 100%;
@@ -387,7 +381,6 @@ LOGIN_TEMPLATE = """
             pointer-events: none;
             overflow: hidden;
         }
-
         .particle {
             position: absolute;
             width: 4px;
@@ -397,14 +390,12 @@ LOGIN_TEMPLATE = """
             opacity: 0;
             animation: particleFloat linear infinite;
         }
-
         @keyframes particleFloat {
             0% { transform: translateY(100vh) scale(0); opacity: 0; }
             10% { opacity: 0.8; }
             90% { opacity: 0.8; }
             100% { transform: translateY(-10vh) scale(1); opacity: 0; }
         }
-
         .login-card {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(40px);
@@ -418,17 +409,11 @@ LOGIN_TEMPLATE = """
             z-index: 1;
             animation: slideUp 0.8s ease-out;
         }
-
         @keyframes slideUp {
             0% { transform: translateY(50px) scale(0.95); opacity: 0; }
             100% { transform: translateY(0) scale(1); opacity: 1; }
         }
-
-        .login-card .logo {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
+        .login-card .logo { text-align: center; margin-bottom: 30px; }
         .login-card .logo .logo-icon {
             width: 80px;
             height: 80px;
@@ -443,12 +428,10 @@ LOGIN_TEMPLATE = """
             box-shadow: 0 20px 50px rgba(102, 126, 234, 0.3);
             animation: pulseLogo 2.5s ease-in-out infinite;
         }
-
         @keyframes pulseLogo {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
         }
-
         .login-card .logo h3 {
             font-family: 'Orbitron', monospace;
             font-weight: 900;
@@ -460,12 +443,10 @@ LOGIN_TEMPLATE = """
             margin: 0;
             animation: textGradient 4s ease-in-out infinite;
         }
-
         @keyframes textGradient {
             0%, 100% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
         }
-
         .login-card .logo .subtitle {
             color: rgba(255, 255, 255, 0.4);
             font-size: 12px;
@@ -473,7 +454,6 @@ LOGIN_TEMPLATE = """
             margin-top: 5px;
             text-transform: uppercase;
         }
-
         .login-card .logo .status-dot {
             display: inline-block;
             width: 8px;
@@ -484,12 +464,10 @@ LOGIN_TEMPLATE = """
             margin-right: 6px;
             vertical-align: middle;
         }
-
         @keyframes blink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
-
         .form-control {
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.06);
@@ -498,18 +476,13 @@ LOGIN_TEMPLATE = """
             color: #fff;
             transition: all 0.3s;
         }
-
         .form-control:focus {
             background: rgba(255, 255, 255, 0.06);
             border-color: #667eea;
             box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
             color: #fff;
         }
-
-        .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.2);
-        }
-
+        .form-control::placeholder { color: rgba(255, 255, 255, 0.2); }
         .form-label {
             color: rgba(255, 255, 255, 0.5);
             font-weight: 600;
@@ -518,11 +491,7 @@ LOGIN_TEMPLATE = """
             letter-spacing: 1px;
             margin-bottom: 6px;
         }
-
-        .password-toggle {
-            position: relative;
-        }
-
+        .password-toggle { position: relative; }
         .password-toggle .toggle-eye {
             position: absolute;
             right: 15px;
@@ -533,11 +502,7 @@ LOGIN_TEMPLATE = """
             transition: 0.3s;
             z-index: 2;
         }
-
-        .password-toggle .toggle-eye:hover {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
+        .password-toggle .toggle-eye:hover { color: rgba(255, 255, 255, 0.6); }
         .btn-login {
             background: linear-gradient(135deg, #667eea, #764ba2);
             border: none;
@@ -549,36 +514,20 @@ LOGIN_TEMPLATE = """
             transition: all 0.3s;
             font-size: 15px;
         }
-
         .btn-login:hover {
             transform: translateY(-3px);
             box-shadow: 0 15px 40px rgba(102, 126, 234, 0.35);
             color: white;
         }
-
-        .btn-login:disabled {
-            opacity: 0.7;
-            transform: none;
-        }
-
+        .btn-login:disabled { opacity: 0.7; transform: none; }
         .switch-link {
             text-align: center;
             margin-top: 20px;
             color: rgba(255, 255, 255, 0.35);
             font-size: 14px;
         }
-
-        .switch-link a {
-            color: #a78bfa;
-            text-decoration: none;
-            font-weight: 600;
-            transition: 0.3s;
-        }
-
-        .switch-link a:hover {
-            color: #fff;
-        }
-
+        .switch-link a { color: #a78bfa; text-decoration: none; font-weight: 600; transition: 0.3s; }
+        .switch-link a:hover { color: #fff; }
         .alert {
             border-radius: 14px;
             background: rgba(255, 255, 255, 0.04);
@@ -587,10 +536,8 @@ LOGIN_TEMPLATE = """
             padding: 12px 16px;
             font-size: 13px;
         }
-
         .alert-success { border-color: rgba(40, 167, 69, 0.2); color: #28a745; }
         .alert-danger { border-color: rgba(220, 53, 69, 0.2); color: #dc3545; }
-
         .footer-text {
             text-align: center;
             margin-top: 25px;
@@ -598,24 +545,16 @@ LOGIN_TEMPLATE = """
             font-size: 11px;
             letter-spacing: 1px;
         }
-
         .footer-text .heart {
             color: #ff4757;
             animation: heartBeat 1.5s ease-in-out infinite;
             display: inline-block;
         }
-
         @keyframes heartBeat {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.2); }
         }
-
-        .spinner-border-sm {
-            width: 1.2rem;
-            height: 1.2rem;
-            border-width: 0.15em;
-        }
-
+        .spinner-border-sm { width: 1.2rem; height: 1.2rem; border-width: 0.15em; }
         .tab-header {
             display: flex;
             gap: 10px;
@@ -625,7 +564,6 @@ LOGIN_TEMPLATE = """
             padding: 5px;
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
-
         .tab-header .tab-btn {
             flex: 1;
             padding: 10px;
@@ -638,31 +576,18 @@ LOGIN_TEMPLATE = """
             transition: all 0.3s;
             cursor: pointer;
         }
-
-        .tab-header .tab-btn:hover {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
+        .tab-header .tab-btn:hover { color: rgba(255, 255, 255, 0.7); }
         .tab-header .tab-btn.active {
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
             color: #fff;
             box-shadow: 0 5px 20px rgba(102, 126, 234, 0.1);
         }
-
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
+        .tab-content { display: none; animation: fadeIn 0.5s ease; }
+        .tab-content.active { display: block; }
         @keyframes fadeIn {
             0% { opacity: 0; transform: translateY(10px); }
             100% { opacity: 1; transform: translateY(0); }
         }
-
         @media (max-width: 480px) {
             .login-card { padding: 30px 25px; margin: 15px; border-radius: 20px; }
             .login-card .logo .logo-icon { width: 65px; height: 65px; font-size: 32px; }
@@ -878,7 +803,7 @@ LOGIN_TEMPLATE = """
 </html>
 """
 
-# ===== HTML MAIN TEMPLATE (Đã có nhạc nền) =====
+# ===== HTML MAIN TEMPLATE (Với nhạc TikTok Embed) =====
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="vi">
@@ -1255,24 +1180,24 @@ HTML_TEMPLATE = """
             .logo-area { flex-direction: column; }
         }
         
-        /* ===== MUSIC PLAYER ===== */
+        /* ===== MUSIC PLAYER TIKTOK ===== */
         #musicPlayer {
             position: fixed;
             bottom: 25px;
             right: 25px;
             z-index: 9999;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(12px);
             border-radius: 50px;
-            padding: 8px 16px;
+            padding: 10px 18px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
             transition: all 0.3s ease;
             font-family: 'Segoe UI', sans-serif;
-            max-width: 380px;
+            max-width: 400px;
         }
         #musicPlayer:hover { background: rgba(0, 0, 0, 0.9); border-color: rgba(255, 255, 255, 0.15); }
         #playBtn {
@@ -1281,8 +1206,8 @@ HTML_TEMPLATE = """
             color: #fff;
             font-size: 16px;
             cursor: pointer;
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1311,18 +1236,40 @@ HTML_TEMPLATE = """
             cursor: pointer;
             border: 2px solid #fff;
         }
-        .music-info { color: rgba(255,255,255,0.5); font-size: 10px; display: flex; flex-direction: column; line-height: 1.2; min-width: 0; flex: 1; }
-        .music-info .song-name { color: #fff; font-weight: 600; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .music-info .song-artist { font-size: 9px; color: rgba(255,255,255,0.3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        #nextBtn { background: none; border: none; color: rgba(255,255,255,0.3); font-size: 14px; cursor: pointer; transition: 0.3s; padding: 5px; flex-shrink: 0; }
+        .music-info { color: rgba(255,255,255,0.5); font-size: 10px; display: flex; flex-direction: column; line-height: 1.3; min-width: 0; flex: 1; }
+        .music-info .song-name { color: #fff; font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .music-info .song-artist { font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #nextBtn { background: none; border: none; color: rgba(255,255,255,0.3); font-size: 16px; cursor: pointer; transition: 0.3s; padding: 5px; flex-shrink: 0; }
         #nextBtn:hover { color: #fff; transform: rotate(30deg); }
+        #sourceTag {
+            font-size: 8px;
+            background: rgba(255,255,255,0.08);
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: rgba(255,255,255,0.3);
+            flex-shrink: 0;
+        }
         @media (max-width: 480px) {
-            #musicPlayer { padding: 6px 12px; gap: 8px; bottom: 15px; right: 15px; max-width: 200px; }
+            #musicPlayer { padding: 8px 12px; gap: 10px; bottom: 15px; right: 15px; max-width: 220px; }
             #volumeSlider { width: 35px; }
-            #playBtn { width: 28px; height: 28px; font-size: 13px; }
-            .music-info .song-name { font-size: 9px; }
+            #playBtn { width: 30px; height: 30px; font-size: 13px; }
+            .music-info .song-name { font-size: 10px; }
             .music-info .song-artist { font-size: 8px; }
-            #nextBtn { font-size: 12px; }
+            #nextBtn { font-size: 13px; }
+            #sourceTag { font-size: 7px; padding: 1px 5px; }
+        }
+        
+        /* TikTok iframe hidden */
+        #tiktokPlayer {
+            position: fixed;
+            bottom: -9999px;
+            right: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0.01;
+            pointer-events: none;
+            border: none;
+            z-index: -1;
         }
     </style>
 </head>
@@ -1566,16 +1513,19 @@ HTML_TEMPLATE = """
         </div>
     </div>
 
+    <!-- ===== TIKTOK PLAYER (ẩn) ===== -->
+    <iframe id="tiktokPlayer" allow="autoplay; encrypted-media; fullscreen"></iframe>
+
     <!-- ===== MUSIC PLAYER ===== -->
     <div id="musicPlayer">
         <button id="playBtn" title="Bật/Tắt nhạc"><i class="fas fa-play"></i></button>
         <div class="music-info">
             <div class="song-name" id="songName">🎵 Đang tải...</div>
-            <div class="song-artist" id="songArtist"><span class="status-dot"></span> Nhạc nền</div>
+            <div class="song-artist" id="songArtist">🎵 TikTok</div>
         </div>
         <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.3">
         <button id="nextBtn" title="Bài tiếp theo"><i class="fas fa-step-forward"></i></button>
-        <audio id="bgMusic" preload="auto"></audio>
+        <span id="sourceTag">🎵 TIKTOK</span>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -2050,20 +2000,22 @@ HTML_TEMPLATE = """
             });
         }
 
-        // ===== MUSIC PLAYER =====
+        // ===== MUSIC PLAYER TIKTOK =====
         (function() {
+            // ===== DANH SÁCH BÀI HÁT TIKTOK =====
             const PLAYLIST = [
-                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', name: 'Nhạc Chill 1', artist: 'SoundHelix' },
-                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', name: 'Nhạc Chill 2', artist: 'SoundHelix' },
-                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', name: 'Nhạc Chill 3', artist: 'SoundHelix' },
-                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', name: 'Nhạc Chill 4', artist: 'SoundHelix' },
-                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', name: 'Nhạc Chill 5', artist: 'SoundHelix' },
-                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', name: 'Nhạc Chill 6', artist: 'SoundHelix' },
-                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3', name: 'Nhạc Chill 7', artist: 'SoundHelix' },
-                { url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3', name: 'Nhạc Chill 8', artist: 'SoundHelix' }
+                // Video ID từ link TikTok
+                { videoId: '6718335390845095173', name: 'Nhạc TikTok 1', artist: 'TikTok' },
+                { videoId: '6723424876846288134', name: 'Nhạc TikTok 2', artist: 'TikTok' },
+                { videoId: '6718765432109876543', name: 'Nhạc TikTok 3', artist: 'TikTok' },
+                { videoId: '6721234567890123456', name: 'Nhạc TikTok 4', artist: 'TikTok' },
+                { videoId: '6719876543210987654', name: 'Nhạc TikTok 5', artist: 'TikTok' },
+                { videoId: '6723456789012345678', name: 'Nhạc TikTok 6', artist: 'TikTok' },
+                { videoId: '6717654321098765432', name: 'Nhạc TikTok 7', artist: 'TikTok' },
+                { videoId: '6725678901234567890', name: 'Nhạc TikTok 8', artist: 'TikTok' },
             ];
 
-            const audio = document.getElementById('bgMusic');
+            const iframe = document.getElementById('tiktokPlayer');
             const playBtn = document.getElementById('playBtn');
             const nextBtn = document.getElementById('nextBtn');
             const volumeSlider = document.getElementById('volumeSlider');
@@ -2071,24 +2023,23 @@ HTML_TEMPLATE = """
             const songArtist = document.getElementById('songArtist');
 
             let currentIndex = 0;
+            let isPlaying = false;
 
             function playSong(index) {
                 const song = PLAYLIST[index];
                 if (!song) return;
+                
                 songName.textContent = `🎵 ${song.name}`;
                 songArtist.textContent = `${song.artist}`;
-                audio.src = song.url;
-                audio.load();
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                    }).catch(() => {
-                        playBtn.innerHTML = '<i class="fas fa-play"></i>';
-                    });
-                }
+                
+                // Tạo embed URL TikTok
+                const embedUrl = `https://www.tiktok.com/player/v1/${song.videoId}?autoplay=1&loop=0&music_info=1`;
+                iframe.src = embedUrl;
+                
+                isPlaying = true;
+                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
                 currentIndex = index;
-                localStorage.setItem('currentSongIndex', index);
+                localStorage.setItem('currentTikTokIndex', index);
             }
 
             function nextSong() {
@@ -2104,19 +2055,22 @@ HTML_TEMPLATE = """
                 playSong(getRandomSong());
             }
 
-            volumeSlider.addEventListener('input', function() {
-                audio.volume = parseFloat(this.value);
-                localStorage.setItem('musicVolume', audio.volume);
-            });
-
+            // ===== ĐIỀU KHIỂN =====
             playBtn.addEventListener('click', function() {
-                if (audio.paused) {
-                    audio.play().then(() => {
-                        this.innerHTML = '<i class="fas fa-pause"></i>';
-                    }).catch(e => console.warn('Lỗi phát nhạc:', e));
-                } else {
-                    audio.pause();
+                if (isPlaying) {
+                    iframe.src = 'about:blank';
+                    isPlaying = false;
                     this.innerHTML = '<i class="fas fa-play"></i>';
+                    songArtist.textContent = '⏸ Đã tạm dừng';
+                } else {
+                    const song = PLAYLIST[currentIndex];
+                    if (song) {
+                        const embedUrl = `https://www.tiktok.com/player/v1/${song.videoId}?autoplay=1&loop=0&music_info=1`;
+                        iframe.src = embedUrl;
+                        isPlaying = true;
+                        this.innerHTML = '<i class="fas fa-pause"></i>';
+                        songArtist.textContent = `${song.artist}`;
+                    }
                 }
             });
 
@@ -2124,28 +2078,23 @@ HTML_TEMPLATE = """
                 nextSong();
             });
 
-            audio.addEventListener('ended', function() {
-                nextSong();
-            });
-
+            // ===== KHỞI TẠO =====
             function init() {
-                let savedIndex = localStorage.getItem('currentSongIndex');
+                let savedIndex = localStorage.getItem('currentTikTokIndex');
                 if (savedIndex !== null) {
                     const idx = parseInt(savedIndex);
                     if (idx >= 0 && idx < PLAYLIST.length) {
                         playSong(idx);
-                    } else {
-                        playRandomSong();
+                        return;
                     }
-                } else {
-                    playRandomSong();
                 }
+                playRandomSong();
                 
+                // Lưu volume
                 const savedVolume = localStorage.getItem('musicVolume');
                 if (savedVolume !== null) {
                     const vol = parseFloat(savedVolume);
                     if (!isNaN(vol) && vol >= 0 && vol <= 1) {
-                        audio.volume = vol;
                         volumeSlider.value = vol;
                     }
                 }
@@ -2198,7 +2147,6 @@ def api_login():
         
         session['logged_in'] = True
         session['username'] = username
-        # Load tasks cho user này
         load_tasks()
         return jsonify({'success': True, 'message': 'Đăng nhập thành công!'})
     except Exception as e:
@@ -2819,6 +2767,6 @@ if __name__ == '__main__':
     print("🚀 WEB PNDK TOOL ĐA APP")
     print("📱 http://localhost:5000")
     print("🔐 Đăng nhập để sử dụng")
-    print("🎵 Nhạc nền MP3 (8 bài)")
+    print("🎵 Nhạc TikTok Embed (8 bài)")
     print("=" * 60)
     app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
