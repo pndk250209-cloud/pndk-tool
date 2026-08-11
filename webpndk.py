@@ -1158,6 +1158,377 @@ LOGIN_TEMPLATE = """
             });
         }
     </script>
+
+    <!-- ===== FLOATING MUSIC PLAYER - RANDOM PLAYLIST ===== -->
+    <style>
+        #musicPlayer {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 50px;
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
+            transition: all 0.3s ease;
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 300px;
+        }
+        #musicPlayer:hover {
+            background: rgba(0, 0, 0, 0.85);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.8);
+        }
+        #playBtn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            outline: none;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            flex-shrink: 0;
+        }
+        #playBtn:hover {
+            transform: scale(1.12);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+        }
+        #volumeSlider {
+            width: 65px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        #volumeSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.4);
+        }
+        #volumeSlider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #fff;
+        }
+        .music-info {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.3;
+            min-width: 0;
+            flex: 1;
+        }
+        .music-info .song-name {
+            color: #fff;
+            font-weight: 600;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .music-info .song-artist {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .music-info .status-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #28a745;
+            margin-right: 5px;
+            animation: pulse-dot 1.2s ease-in-out infinite;
+            vertical-align: middle;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+        #nextBtn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            padding: 5px;
+            flex-shrink: 0;
+        }
+        #nextBtn:hover {
+            color: #fff;
+            transform: rotate(30deg);
+        }
+        @media (max-width: 480px) {
+            #musicPlayer {
+                padding: 8px 12px;
+                gap: 10px;
+                bottom: 15px;
+                right: 15px;
+                max-width: 220px;
+            }
+            #volumeSlider {
+                width: 40px;
+            }
+            #playBtn {
+                width: 32px;
+                height: 32px;
+                font-size: 15px;
+            }
+            .music-info .song-name {
+                font-size: 10px;
+            }
+            .music-info .song-artist {
+                font-size: 9px;
+            }
+            #nextBtn {
+                font-size: 13px;
+            }
+        }
+    </style>
+
+    <div id="musicPlayer">
+        <button id="playBtn" title="Bật/Tắt nhạc">
+            <i class="fas fa-play"></i>
+        </button>
+        <div class="music-info">
+            <div class="song-name" id="songName">🎵 Đang tải...</div>
+            <div class="song-artist" id="songArtist">
+                <span class="status-dot"></span> Nhạc nền
+            </div>
+        </div>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.3">
+        <button id="nextBtn" title="Bài tiếp theo">
+            <i class="fas fa-step-forward"></i>
+        </button>
+        <audio id="bgMusic" loop preload="auto"></audio>
+    </div>
+
+    <script>
+        (function() {
+            // ===== DANH SÁCH NHẠC =====
+            const PLAYLIST = [
+                { 
+                    id: 'a0MNrpNvyW0', 
+                    name: 'Anh Sẽ Đón Em', 
+                    artist: 'Nguyên ft. Trang (Cukak Remix)' 
+                },
+                { 
+                    id: 'Zx-oyNNDA6w', 
+                    name: 'Bài hát 2', 
+                    artist: 'Nghệ sĩ 2' 
+                },
+                { 
+                    id: 'QOLn6-qAI2I', 
+                    name: 'Bài hát 3', 
+                    artist: 'Nghệ sĩ 3' 
+                },
+                { 
+                    id: '69fjESqvaLM', 
+                    name: 'Bài hát 4', 
+                    artist: 'Nghệ sĩ 4' 
+                },
+                { 
+                    id: '38HBleFX03w', 
+                    name: 'Bài hát 5', 
+                    artist: 'Nghệ sĩ 5' 
+                }
+            ];
+
+            // ===== CẤU HÌNH =====
+            const audio = document.getElementById('bgMusic');
+            const playBtn = document.getElementById('playBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const songName = document.getElementById('songName');
+            const songArtist = document.getElementById('songArtist');
+
+            let currentIndex = 0;
+
+            // ===== HÀM LẤY BÀI HÁT NGẪU NHIÊN =====
+            function getRandomSong() {
+                return Math.floor(Math.random() * PLAYLIST.length);
+            }
+
+            // ===== HÀM PHÁT BÀI HÁT =====
+            function playSong(index) {
+                const song = PLAYLIST[index];
+                if (!song) return;
+                
+                // Cập nhật thông tin
+                songName.textContent = `🎵 ${song.name}`;
+                songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                
+                // Tạo URL YouTube không hình ảnh (chỉ lấy audio)
+                const videoUrl = `https://www.youtube.com/embed/${song.id}?autoplay=1&loop=0&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&autohide=1&start=0`;
+                
+                // Cách 1: Dùng iframe ẩn để lấy audio (tối ưu nhất)
+                // Xóa iframe cũ nếu có
+                const oldIframe = document.getElementById('youtubeAudioPlayer');
+                if (oldIframe) oldIframe.remove();
+                
+                // Tạo iframe mới
+                const iframe = document.createElement('iframe');
+                iframe.id = 'youtubeAudioPlayer';
+                iframe.src = videoUrl;
+                iframe.style.cssText = 'position:absolute; top:-9999px; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;';
+                iframe.allow = 'autoplay; encrypted-media';
+                document.body.appendChild(iframe);
+                
+                // Cập nhật nút Play
+                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                
+                // Lưu index hiện tại
+                currentIndex = index;
+                
+                // Lưu vào localStorage để nhớ bài đang phát
+                try {
+                    localStorage.setItem('currentSongIndex', index);
+                } catch(e) {}
+            }
+
+            // ===== HÀM PHÁT BÀI NGẪU NHIÊN =====
+            function playRandomSong() {
+                const randomIndex = getRandomSong();
+                playSong(randomIndex);
+            }
+
+            // ===== HÀM CHUYỂN BÀI TIẾP THEO =====
+            function nextSong() {
+                // Chọn bài ngẫu nhiên khác bài hiện tại
+                let newIndex;
+                do {
+                    newIndex = getRandomSong();
+                } while (newIndex === currentIndex && PLAYLIST.length > 1);
+                playSong(newIndex);
+            }
+
+            // ===== ĐIỀU KHIỂN PLAY/PAUSE =====
+            function togglePlay() {
+                const iframe = document.getElementById('youtubeAudioPlayer');
+                if (!iframe) {
+                    playRandomSong();
+                    return;
+                }
+                
+                // Gửi lệnh pause/play qua postMessage (cách đơn giản là reload iframe)
+                // Cách thực tế: dùng Youtube Player API, nhưng để đơn giản, ta reload lại iframe
+                const isPlaying = playBtn.innerHTML.includes('pause');
+                if (isPlaying) {
+                    // Tạm dừng bằng cách reload iframe với autoplay=0
+                    const src = iframe.src.replace('autoplay=1', 'autoplay=0');
+                    iframe.src = src;
+                    playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
+                } else {
+                    // Phát lại
+                    const src = iframe.src.replace('autoplay=0', 'autoplay=1');
+                    iframe.src = src;
+                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    const song = PLAYLIST[currentIndex];
+                    if (song) {
+                        songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                    }
+                }
+            }
+
+            // ===== KHỞI TẠO =====
+            function init() {
+                // Khôi phục bài hát đã lưu
+                let savedIndex = null;
+                try {
+                    const saved = localStorage.getItem('currentSongIndex');
+                    if (saved !== null) {
+                        const idx = parseInt(saved);
+                        if (idx >= 0 && idx < PLAYLIST.length) {
+                            savedIndex = idx;
+                        }
+                    }
+                } catch(e) {}
+                
+                if (savedIndex !== null) {
+                    playSong(savedIndex);
+                } else {
+                    playRandomSong();
+                }
+                
+                // Âm lượng
+                audio.volume = parseFloat(volumeSlider.value);
+                
+                // Sự kiện
+                volumeSlider.addEventListener('input', function() {
+                    audio.volume = parseFloat(this.value);
+                    localStorage.setItem('musicVolume', audio.volume);
+                });
+                
+                playBtn.addEventListener('click', togglePlay);
+                nextBtn.addEventListener('click', function() {
+                    nextSong();
+                });
+                
+                // Khôi phục âm lượng
+                const savedVolume = localStorage.getItem('musicVolume');
+                if (savedVolume !== null) {
+                    const vol = parseFloat(savedVolume);
+                    if (!isNaN(vol) && vol >= 0 && vol <= 1) {
+                        audio.volume = vol;
+                        volumeSlider.value = vol;
+                    }
+                }
+                
+                // Nếu phát lâu hơn 5 phút, tự động chuyển bài
+                let playStartTime = Date.now();
+                setInterval(() => {
+                    const iframe = document.getElementById('youtubeAudioPlayer');
+                    if (iframe && iframe.src.includes('autoplay=1')) {
+                        const elapsed = (Date.now() - playStartTime) / 1000;
+                        if (elapsed > 300) { // 5 phút
+                            nextSong();
+                            playStartTime = Date.now();
+                        }
+                    } else {
+                        playStartTime = Date.now();
+                    }
+                }, 10000);
+            }
+
+            // ===== CHẠY KHI TRANG LOAD XONG =====
+            if (document.readyState === 'complete') {
+                init();
+            } else {
+                window.addEventListener('load', init);
+            }
+        })();
+    </script>
 </body>
 </html>
 """
@@ -2924,6 +3295,373 @@ HTML_TEMPLATE = """
             refreshTasks();
         };
     </script>
+
+    <!-- ===== FLOATING MUSIC PLAYER - RANDOM PLAYLIST ===== -->
+    <style>
+        #musicPlayer {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 50px;
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
+            transition: all 0.3s ease;
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 300px;
+        }
+        #musicPlayer:hover {
+            background: rgba(0, 0, 0, 0.85);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.8);
+        }
+        #playBtn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            outline: none;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            flex-shrink: 0;
+        }
+        #playBtn:hover {
+            transform: scale(1.12);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+        }
+        #volumeSlider {
+            width: 65px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        #volumeSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.4);
+        }
+        #volumeSlider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #fff;
+        }
+        .music-info {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.3;
+            min-width: 0;
+            flex: 1;
+        }
+        .music-info .song-name {
+            color: #fff;
+            font-weight: 600;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .music-info .song-artist {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .music-info .status-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #28a745;
+            margin-right: 5px;
+            animation: pulse-dot 1.2s ease-in-out infinite;
+            vertical-align: middle;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+        #nextBtn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            padding: 5px;
+            flex-shrink: 0;
+        }
+        #nextBtn:hover {
+            color: #fff;
+            transform: rotate(30deg);
+        }
+        @media (max-width: 480px) {
+            #musicPlayer {
+                padding: 8px 12px;
+                gap: 10px;
+                bottom: 15px;
+                right: 15px;
+                max-width: 220px;
+            }
+            #volumeSlider {
+                width: 40px;
+            }
+            #playBtn {
+                width: 32px;
+                height: 32px;
+                font-size: 15px;
+            }
+            .music-info .song-name {
+                font-size: 10px;
+            }
+            .music-info .song-artist {
+                font-size: 9px;
+            }
+            #nextBtn {
+                font-size: 13px;
+            }
+        }
+    </style>
+
+    <div id="musicPlayer">
+        <button id="playBtn" title="Bật/Tắt nhạc">
+            <i class="fas fa-play"></i>
+        </button>
+        <div class="music-info">
+            <div class="song-name" id="songName">🎵 Đang tải...</div>
+            <div class="song-artist" id="songArtist">
+                <span class="status-dot"></span> Nhạc nền
+            </div>
+        </div>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.3">
+        <button id="nextBtn" title="Bài tiếp theo">
+            <i class="fas fa-step-forward"></i>
+        </button>
+        <audio id="bgMusic" loop preload="auto"></audio>
+    </div>
+
+    <script>
+        (function() {
+            // ===== DANH SÁCH NHẠC =====
+            const PLAYLIST = [
+                { 
+                    id: 'a0MNrpNvyW0', 
+                    name: 'Anh Sẽ Đón Em', 
+                    artist: 'Nguyên ft. Trang (Cukak Remix)' 
+                },
+                { 
+                    id: 'Zx-oyNNDA6w', 
+                    name: 'Bài hát 2', 
+                    artist: 'Nghệ sĩ 2' 
+                },
+                { 
+                    id: 'QOLn6-qAI2I', 
+                    name: 'Bài hát 3', 
+                    artist: 'Nghệ sĩ 3' 
+                },
+                { 
+                    id: '69fjESqvaLM', 
+                    name: 'Bài hát 4', 
+                    artist: 'Nghệ sĩ 4' 
+                },
+                { 
+                    id: '38HBleFX03w', 
+                    name: 'Bài hát 5', 
+                    artist: 'Nghệ sĩ 5' 
+                }
+            ];
+
+            // ===== CẤU HÌNH =====
+            const audio = document.getElementById('bgMusic');
+            const playBtn = document.getElementById('playBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const songName = document.getElementById('songName');
+            const songArtist = document.getElementById('songArtist');
+
+            let currentIndex = 0;
+
+            // ===== HÀM LẤY BÀI HÁT NGẪU NHIÊN =====
+            function getRandomSong() {
+                return Math.floor(Math.random() * PLAYLIST.length);
+            }
+
+            // ===== HÀM PHÁT BÀI HÁT =====
+            function playSong(index) {
+                const song = PLAYLIST[index];
+                if (!song) return;
+                
+                // Cập nhật thông tin
+                songName.textContent = `🎵 ${song.name}`;
+                songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                
+                // Tạo URL YouTube không hình ảnh (chỉ lấy audio)
+                const videoUrl = `https://www.youtube.com/embed/${song.id}?autoplay=1&loop=0&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&autohide=1&start=0`;
+                
+                // Xóa iframe cũ nếu có
+                const oldIframe = document.getElementById('youtubeAudioPlayer');
+                if (oldIframe) oldIframe.remove();
+                
+                // Tạo iframe mới
+                const iframe = document.createElement('iframe');
+                iframe.id = 'youtubeAudioPlayer';
+                iframe.src = videoUrl;
+                iframe.style.cssText = 'position:absolute; top:-9999px; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;';
+                iframe.allow = 'autoplay; encrypted-media';
+                document.body.appendChild(iframe);
+                
+                // Cập nhật nút Play
+                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                
+                // Lưu index hiện tại
+                currentIndex = index;
+                
+                // Lưu vào localStorage để nhớ bài đang phát
+                try {
+                    localStorage.setItem('currentSongIndex', index);
+                } catch(e) {}
+            }
+
+            // ===== HÀM PHÁT BÀI NGẪU NHIÊN =====
+            function playRandomSong() {
+                const randomIndex = getRandomSong();
+                playSong(randomIndex);
+            }
+
+            // ===== HÀM CHUYỂN BÀI TIẾP THEO =====
+            function nextSong() {
+                let newIndex;
+                do {
+                    newIndex = getRandomSong();
+                } while (newIndex === currentIndex && PLAYLIST.length > 1);
+                playSong(newIndex);
+            }
+
+            // ===== ĐIỀU KHIỂN PLAY/PAUSE =====
+            function togglePlay() {
+                const iframe = document.getElementById('youtubeAudioPlayer');
+                if (!iframe) {
+                    playRandomSong();
+                    return;
+                }
+                
+                const isPlaying = playBtn.innerHTML.includes('pause');
+                if (isPlaying) {
+                    // Tạm dừng bằng cách reload iframe với autoplay=0
+                    const src = iframe.src.replace('autoplay=1', 'autoplay=0');
+                    iframe.src = src;
+                    playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    songArtist.innerHTML = `<span style="color:rgba(255,255,255,0.3);">⏸ Đã tạm dừng</span>`;
+                } else {
+                    // Phát lại
+                    const src = iframe.src.replace('autoplay=0', 'autoplay=1');
+                    iframe.src = src;
+                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    const song = PLAYLIST[currentIndex];
+                    if (song) {
+                        songArtist.innerHTML = `<span class="status-dot"></span> ${song.artist}`;
+                    }
+                }
+            }
+
+            // ===== KHỞI TẠO =====
+            function init() {
+                // Khôi phục bài hát đã lưu
+                let savedIndex = null;
+                try {
+                    const saved = localStorage.getItem('currentSongIndex');
+                    if (saved !== null) {
+                        const idx = parseInt(saved);
+                        if (idx >= 0 && idx < PLAYLIST.length) {
+                            savedIndex = idx;
+                        }
+                    }
+                } catch(e) {}
+                
+                if (savedIndex !== null) {
+                    playSong(savedIndex);
+                } else {
+                    playRandomSong();
+                }
+                
+                // Âm lượng
+                audio.volume = parseFloat(volumeSlider.value);
+                
+                // Sự kiện
+                volumeSlider.addEventListener('input', function() {
+                    audio.volume = parseFloat(this.value);
+                    localStorage.setItem('musicVolume', audio.volume);
+                });
+                
+                playBtn.addEventListener('click', togglePlay);
+                nextBtn.addEventListener('click', function() {
+                    nextSong();
+                });
+                
+                // Khôi phục âm lượng
+                const savedVolume = localStorage.getItem('musicVolume');
+                if (savedVolume !== null) {
+                    const vol = parseFloat(savedVolume);
+                    if (!isNaN(vol) && vol >= 0 && vol <= 1) {
+                        audio.volume = vol;
+                        volumeSlider.value = vol;
+                    }
+                }
+                
+                // Tự động chuyển bài sau 5 phút
+                let playStartTime = Date.now();
+                setInterval(() => {
+                    const iframe = document.getElementById('youtubeAudioPlayer');
+                    if (iframe && iframe.src.includes('autoplay=1')) {
+                        const elapsed = (Date.now() - playStartTime) / 1000;
+                        if (elapsed > 300) {
+                            nextSong();
+                            playStartTime = Date.now();
+                        }
+                    } else {
+                        playStartTime = Date.now();
+                    }
+                }, 10000);
+            }
+
+            // ===== CHẠY KHI TRANG LOAD XONG =====
+            if (document.readyState === 'complete') {
+                init();
+            } else {
+                window.addEventListener('load', init);
+            }
+        })();
+    </script>
 </body>
 </html>
 """
@@ -3591,5 +4329,6 @@ if __name__ == '__main__':
     print("🚀 WEB PNDK TOOL ĐA APP")
     print("📱 http://localhost:5000")
     print("🔐 Đăng nhập để sử dụng")
+    print("🎵 Nhạc nền random từ playlist của bạn")
     print("=" * 60)
     app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
